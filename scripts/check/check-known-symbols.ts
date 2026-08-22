@@ -365,6 +365,16 @@ export const KNOWN_MCP_TOOL_NAMES: readonly string[] = [
   "obsidian_sync_trigger",
   "obsidian_sync_conflicts",
   "obsidian_sync_resolve_conflict",
+  // CCR + new tools (9) — 2026-08-21
+  "omniroute_ccr_delete",
+  "omniroute_ccr_inspect",
+  "omniroute_ccr_list",
+  "omniroute_ccr_retrieve",
+  "omniroute_ccr_stats",
+  "omniroute_ccr_store",
+  "omniroute_pick_fastest_model",
+  "omniroute_tool_search",
+  "omniroute_web_fetch",
 ];
 
 // ───────────────────────────────────────────────────────────────────────────

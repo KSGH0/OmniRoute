@@ -263,7 +263,7 @@ export function useModelImportHandlers({
         }, 2000);
       }
     } catch (error) {
-      console.log("Error importing models:", error);
+      console.error("Error importing models:", error);
       setImportProgress((prev) => ({
         ...prev,
         phase: "error",
@@ -380,7 +380,7 @@ export function useModelImportHandlers({
         }, 2000);
       }
     } catch (error) {
-      console.log("Error importing models:", error);
+      console.error("Error importing models:", error);
       setImportProgress((prev) => ({
         ...prev,
         phase: "error",

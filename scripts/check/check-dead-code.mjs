@@ -20,7 +20,11 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 
 const ROOT = process.cwd();
-const KNIP_BIN = path.join(ROOT, "node_modules", ".bin", "knip");
+const KNIP_BIN_BASE = path.join(ROOT, "node_modules", ".bin", "knip");
+const KNIP_BIN =
+  process.platform === "win32" && fs.existsSync(`${KNIP_BIN_BASE}.cmd`)
+    ? `${KNIP_BIN_BASE}.cmd`
+    : KNIP_BIN_BASE;
 const QUIET = process.argv.includes("--quiet");
 const PRINT_JSON = process.argv.includes("--json");
 const UPDATE = process.argv.includes("--update");
@@ -122,6 +126,7 @@ function runKnip() {
       encoding: "utf8",
       maxBuffer: 128 * 1024 * 1024,
       timeout: 300_000, // 5 min (knip pode ser lento em monorepos grandes)
+      shell: process.platform === "win32",
     });
   } catch (err) {
     // knip sai com código != 0 quando encontra issues; o JSON ainda vai no stdout.

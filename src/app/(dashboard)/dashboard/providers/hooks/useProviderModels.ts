@@ -101,7 +101,7 @@ export function useProviderModels(providerId: string): UseProviderModelsResult {
               }
             } catch (syncErr) {
               if (!cancelled) {
-                console.log("Auto-fetch models failed:", syncErr);
+                console.error("Auto-fetch models failed:", syncErr);
               }
             }
           }, 0);

@@ -260,7 +260,7 @@ export default function HomePageClient({ machineId }: HomePageClientProps) {
         setVersionInfo(versionData);
       }
     } catch (e) {
-      console.log("Error fetching data:", e);
+      console.error("Error fetching data:", e);
     } finally {
       setLoading(false);
     }

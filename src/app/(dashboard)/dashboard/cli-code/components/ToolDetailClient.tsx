@@ -46,7 +46,7 @@ export default function ToolDetailClient({ toolId, category }: ToolDetailClientP
         setConnections(data.connections || []);
       }
     } catch (error) {
-      console.log("Error fetching connections:", error);
+      console.error("Error fetching connections:", error);
     }
   }, []);
 
@@ -58,7 +58,7 @@ export default function ToolDetailClient({ toolId, category }: ToolDetailClientP
         setApiKeys(data.keys || []);
       }
     } catch (error) {
-      console.log("Error fetching API keys:", error);
+      console.error("Error fetching API keys:", error);
     }
   }, []);
 
@@ -70,7 +70,7 @@ export default function ToolDetailClient({ toolId, category }: ToolDetailClientP
         setCloudEnabled(data.cloudEnabled || false);
       }
     } catch (error) {
-      console.log("Error loading cloud settings:", error);
+      console.error("Error loading cloud settings:", error);
     }
   }, []);
 
@@ -82,7 +82,7 @@ export default function ToolDetailClient({ toolId, category }: ToolDetailClientP
         setDynamicModels(data?.data || []);
       }
     } catch (error) {
-      console.log("Error fetching dynamic models:", error);
+      console.error("Error fetching dynamic models:", error);
     }
   }, []);
 

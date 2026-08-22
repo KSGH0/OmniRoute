@@ -72,7 +72,7 @@ export default function CodexToolCard({
       const data = await res.json();
       if (res.ok) setModelAliases(data.aliases || {});
     } catch (error) {
-      console.log("Error fetching model aliases:", error);
+      console.error("Error fetching model aliases:", error);
     }
   };
 
@@ -229,7 +229,7 @@ export default function CodexToolCard({
       const data = await res.json();
       if (res.ok) setProfiles(data.profiles || []);
     } catch (error) {
-      console.log("Error fetching profiles:", error);
+      console.error("Error fetching profiles:", error);
     }
   };
 
@@ -301,7 +301,7 @@ export default function CodexToolCard({
       });
       if (res.ok) fetchProfiles();
     } catch (error) {
-      console.log("Error deleting profile:", error);
+      console.error("Error deleting profile:", error);
     }
   };
 
@@ -312,7 +312,7 @@ export default function CodexToolCard({
       const data = await res.json();
       if (res.ok) setBackups(data.backups || []);
     } catch (error) {
-      console.log("Error fetching backups:", error);
+      console.error("Error fetching backups:", error);
     }
   };
 

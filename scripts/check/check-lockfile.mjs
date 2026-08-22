@@ -57,10 +57,7 @@ export function getLockfileLintConfig() {
  * @returns {string[]}
  */
 export function buildLockfileLintArgs(cfg) {
-  const args = [
-    "--path", cfg.lockfilePath,
-    "--type", cfg.type,
-  ];
+  const args = ["--path", cfg.lockfilePath, "--type", cfg.type];
   if (cfg.validateHttps) args.push("--validate-https");
   if (cfg.validateIntegrity) args.push("--validate-integrity");
   if (cfg.allowedHosts.length) {
@@ -80,7 +77,9 @@ function main() {
     process.exit(1);
   }
 
-  const bin = path.join(ROOT, "node_modules", ".bin", "lockfile-lint");
+  const binBase = path.join(ROOT, "node_modules", ".bin", "lockfile-lint");
+  const bin =
+    process.platform === "win32" && fs.existsSync(`${binBase}.cmd`) ? `${binBase}.cmd` : binBase;
   if (!fs.existsSync(bin)) {
     console.error(
       `[check-lockfile] FAIL — lockfile-lint binary not found at:\n  ${bin}\n` +
@@ -92,7 +91,10 @@ function main() {
   const args = buildLockfileLintArgs(cfg);
 
   try {
-    const output = execFileSync(bin, args, { encoding: "utf8" });
+    const output = execFileSync(bin, args, {
+      encoding: "utf8",
+      shell: process.platform === "win32",
+    });
     // lockfile-lint outputs a green ✔ message on success
     console.log("[check-lockfile] OK —", output.trim());
   } catch (err) {

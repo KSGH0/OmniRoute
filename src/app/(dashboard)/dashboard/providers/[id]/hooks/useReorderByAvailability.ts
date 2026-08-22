@@ -28,8 +28,7 @@ export interface UseReorderByAvailabilityParams {
   connections: ConnectionRowConnection[];
   setConnections: (
     updater:
-      | ConnectionRowConnection[]
-      | ((prev: ConnectionRowConnection[]) => ConnectionRowConnection[])
+      ConnectionRowConnection[] | ((prev: ConnectionRowConnection[]) => ConnectionRowConnection[])
   ) => void;
   fetchConnections: () => Promise<void>;
   notify: ReorderNotifier;
@@ -76,7 +75,7 @@ export function useReorderByAvailability({
       );
       await fetchConnections();
     } catch (error) {
-      console.log("Error reordering connections by availability:", error);
+      console.error("Error reordering connections by availability:", error);
       notify.error(t("reorderByAvailabilityError"));
       await fetchConnections();
     } finally {

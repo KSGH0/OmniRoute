@@ -86,7 +86,7 @@ export default function ClaudeToolCard({
       const data = await res.json();
       if (res.ok) setModelAliases(data.aliases || {});
     } catch (error) {
-      console.log("Error fetching model aliases:", error);
+      console.error("Error fetching model aliases:", error);
     }
   };
 
@@ -251,7 +251,7 @@ export default function ClaudeToolCard({
       const data = await res.json();
       if (res.ok) setBackups(data.backups || []);
     } catch (error) {
-      console.log("Error fetching backups:", error);
+      console.error("Error fetching backups:", error);
     }
   };
 

@@ -269,7 +269,7 @@ export default function ProvidersPage() {
         setCodexGlobalServiceMode(getCodexGlobalServiceMode(data.settings));
         setOpenRouterProviderStats(data.openRouterProviderStats);
       } catch (error) {
-        console.log("Error fetching data:", error);
+        console.error("Error fetching data:", error);
       } finally {
         setLoading(false);
       }

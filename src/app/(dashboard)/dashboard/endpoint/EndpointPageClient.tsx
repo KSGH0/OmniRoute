@@ -125,7 +125,7 @@ const DEFAULT_TUNNEL_VISIBILITY: EndpointTunnelVisibility = {
 
 function runEndpointBackgroundTask(taskName: string, task: () => Promise<unknown>) {
   void task().catch((error) => {
-    console.log("Error running endpoint background task:", taskName, error);
+    console.error("Error running endpoint background task:", taskName, error);
   });
 }
 
@@ -358,7 +358,7 @@ export default function APIPageClient({ machineId }: Readonly<APIPageClientProps
         setAllModels(data.data || []);
       }
     } catch (e) {
-      console.log("Error fetching models:", e);
+      console.error("Error fetching models:", e);
     } finally {
       setModelsLoading(false);
     }
@@ -505,7 +505,7 @@ export default function APIPageClient({ machineId }: Readonly<APIPageClientProps
         return tunnelVisibility;
       }
     } catch (error) {
-      console.log("Error loading cloud settings:", error);
+      console.error("Error loading cloud settings:", error);
     }
 
     return DEFAULT_TUNNEL_VISIBILITY;
@@ -685,7 +685,7 @@ export default function APIPageClient({ machineId }: Readonly<APIPageClientProps
         setCloudStatus({ type: "error", message: data.error || t("failedDisable") });
       }
     } catch (error) {
-      console.log("Error disabling cloud:", error);
+      console.error("Error disabling cloud:", error);
       setCloudStatus({ type: "error", message: t("failedDisable") });
     } finally {
       setCloudSyncing(false);

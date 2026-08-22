@@ -40,7 +40,11 @@ import { pathToFileURL, fileURLToPath } from "node:url";
 
 const ROOT = process.cwd();
 const SIZE_LIMIT_CONFIG = path.join(ROOT, ".size-limit.json");
-const SIZE_LIMIT_BIN = path.join(ROOT, "node_modules", ".bin", "size-limit");
+const SIZE_LIMIT_BIN_BASE = path.join(ROOT, "node_modules", ".bin", "size-limit");
+const SIZE_LIMIT_BIN =
+  process.platform === "win32" && fs.existsSync(`${SIZE_LIMIT_BIN_BASE}.cmd`)
+    ? `${SIZE_LIMIT_BIN_BASE}.cmd`
+    : SIZE_LIMIT_BIN_BASE;
 const BASELINE_PATH = path.join(ROOT, "config/quality/quality-baseline.json");
 const RATCHET = process.argv.includes("--ratchet");
 
@@ -57,11 +61,21 @@ export function runSizeLimit(cwd = ROOT, binPath = SIZE_LIMIT_BIN) {
   }
   let stdout;
   try {
-    stdout = execFileSync("node", [binPath, "--json"], {
-      encoding: "utf8",
-      cwd,
-      maxBuffer: 8 * 1024 * 1024,
-    });
+    // On Windows, .cmd wrapper handles node invocation; don't prefix with "node"
+    if (process.platform === "win32" && binPath.endsWith(".cmd")) {
+      stdout = execFileSync(binPath, ["--json"], {
+        encoding: "utf8",
+        cwd,
+        maxBuffer: 8 * 1024 * 1024,
+        shell: true,
+      });
+    } else {
+      stdout = execFileSync("node", [binPath, "--json"], {
+        encoding: "utf8",
+        cwd,
+        maxBuffer: 8 * 1024 * 1024,
+      });
+    }
   } catch (err) {
     const combined = (err.stdout || "") + (err.stderr || "");
     if (

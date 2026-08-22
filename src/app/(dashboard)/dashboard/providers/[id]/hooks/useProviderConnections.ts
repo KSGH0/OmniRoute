@@ -255,7 +255,7 @@ export function useProviderConnections(
         setProviderNode(node);
       }
     } catch (error) {
-      console.log("Error fetching connections:", error);
+      console.error("Error fetching connections:", error);
     } finally {
       setLoading(false);
     }
@@ -358,7 +358,7 @@ export function useProviderConnections(
         setConnections((prev: any[]) => prev.map((c) => (c.id === id ? { ...c, isActive } : c)));
       }
     } catch (error) {
-      console.log("Error updating connection status:", error);
+      console.error("Error updating connection status:", error);
     }
   };
 
@@ -546,7 +546,11 @@ export function useProviderConnections(
         const data = await res.json().catch(() => ({}));
         notify.error(
           data.error ||
-            providerText(t, "failedUpdateCliproxyRouting", "Failed to update upstream proxy routing")
+            providerText(
+              t,
+              "failedUpdateCliproxyRouting",
+              "Failed to update upstream proxy routing"
+            )
         );
         return;
       }
@@ -686,7 +690,7 @@ export function useProviderConnections(
       ]);
       await fetchConnections();
     } catch (error) {
-      console.log("Error swapping priority:", error);
+      console.error("Error swapping priority:", error);
     }
   };
 

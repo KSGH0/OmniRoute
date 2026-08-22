@@ -76,7 +76,7 @@ export default function AntigravityToolCard({
         }
       }
     } catch (error) {
-      console.log("Error loading saved mappings:", error);
+      console.error("Error loading saved mappings:", error);
     }
   };
 
@@ -88,7 +88,7 @@ export default function AntigravityToolCard({
         setStatus(data);
       }
     } catch (error) {
-      console.log("Error fetching status:", error);
+      console.error("Error fetching status:", error);
       setStatus({ running: false });
     }
   };
@@ -99,7 +99,7 @@ export default function AntigravityToolCard({
       const data = await res.json();
       if (res.ok) setModelAliases(data.aliases || {});
     } catch (error) {
-      console.log("Error fetching model aliases:", error);
+      console.error("Error fetching model aliases:", error);
     }
   };
 

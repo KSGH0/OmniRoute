@@ -126,6 +126,9 @@ docker-compose.minimal.yml
 # Docker Compose override (local-only, never commit)
 docker-compose.override.yml
 
+# Deepwork local state (git-local, OpenCode-readable)
+.slim/deepwork/
+
 # Backup directories
 app.__qa_backup/
 .app-build-backup-*/

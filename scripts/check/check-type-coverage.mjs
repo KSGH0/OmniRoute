@@ -85,7 +85,9 @@ export function evaluateTypeCoverage(current, baseline, eps = 0) {
 }
 
 function runTypeCoverage() {
-  const typeCoverageBin = path.join(ROOT, "node_modules", ".bin", "type-coverage");
+  const binBase = path.join(ROOT, "node_modules", ".bin", "type-coverage");
+  const typeCoverageBin =
+    process.platform === "win32" && fs.existsSync(`${binBase}.cmd`) ? `${binBase}.cmd` : binBase;
 
   if (!fs.existsSync(typeCoverageBin)) {
     throw new Error(`[type-coverage] Binary not found at ${typeCoverageBin}`);
@@ -100,6 +102,7 @@ function runTypeCoverage() {
       encoding: "utf8",
       maxBuffer: 32 * 1024 * 1024,
       cwd: ROOT,
+      shell: process.platform === "win32",
     });
   } catch (err) {
     // type-coverage exits non-zero when --at-least check fails, but we don't use that.

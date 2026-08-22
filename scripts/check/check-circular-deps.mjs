@@ -40,7 +40,11 @@ const ENTRYPOINTS = [
   "src/lib/db/core.ts",
 ];
 
-const DPDM_BIN = resolve(projectRoot, "node_modules/.bin/dpdm");
+const DPDM_BIN_BASE = resolve(projectRoot, "node_modules/.bin/dpdm");
+const DPDM_BIN =
+  process.platform === "win32" && existsSync(`${DPDM_BIN_BASE}.cmd`)
+    ? `${DPDM_BIN_BASE}.cmd`
+    : DPDM_BIN_BASE;
 const TSCONFIG = resolve(projectRoot, "tsconfig.json");
 
 /**
@@ -74,26 +78,49 @@ function runDpdm() {
   const tmpFile = path.join(os.tmpdir(), `dpdm-output-${process.pid}.json`);
 
   try {
-    execFileSync(
-      "node",
-      [
+    if (process.platform === "win32" && DPDM_BIN.endsWith(".cmd")) {
+      execFileSync(
         DPDM_BIN,
-        "--circular",
-        "--no-warning",
-        "--no-tree",
-        "-T",
-        "--tsconfig",
-        TSCONFIG,
-        "-o",
-        tmpFile,
-        ...ENTRYPOINTS,
-      ],
-      {
-        cwd: projectRoot,
-        stdio: "inherit",
-        timeout: 120_000,
-      }
-    );
+        [
+          "--circular",
+          "--no-warning",
+          "--no-tree",
+          "-T",
+          "--tsconfig",
+          TSCONFIG,
+          "-o",
+          tmpFile,
+          ...ENTRYPOINTS,
+        ],
+        {
+          cwd: projectRoot,
+          stdio: "inherit",
+          timeout: 120_000,
+          shell: true,
+        }
+      );
+    } else {
+      execFileSync(
+        "node",
+        [
+          DPDM_BIN,
+          "--circular",
+          "--no-warning",
+          "--no-tree",
+          "-T",
+          "--tsconfig",
+          TSCONFIG,
+          "-o",
+          tmpFile,
+          ...ENTRYPOINTS,
+        ],
+        {
+          cwd: projectRoot,
+          stdio: "inherit",
+          timeout: 120_000,
+        }
+      );
+    }
 
     if (!existsSync(tmpFile)) {
       throw new Error(`dpdm did not produce output file at ${tmpFile}`);

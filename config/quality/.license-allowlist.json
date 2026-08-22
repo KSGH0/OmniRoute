@@ -63,6 +63,24 @@
       "risk": "low",
       "reviewAt": "v4.0.0"
     },
+    "lightningcss-win32-x64-msvc": {
+      "license": "MPL-2.0",
+      "justification": "Win32 MSVC variant of lightningcss native binding. Same MPL-2.0 file-level copyleft rationale — not modified, compatible with MIT project.",
+      "risk": "low",
+      "reviewAt": "v4.0.0"
+    },
+    "@img/sharp-win32-x64": {
+      "license": "Apache-2.0 AND LGPL-3.0-or-later",
+      "justification": "Win32 prebuilt sharp native binding (libvips + sharp binary). Same rationale as Linux variants — dynamically linked libvips shared lib (.dll), not modified or statically bundled, distributable under LGPL.",
+      "risk": "low",
+      "reviewAt": "v4.0.0"
+    },
+    "@yuku-analyzer/binding-win32-x64": {
+      "license": "UNKNOWN",
+      "justification": "Windows prebuild for yuku-analyzer (winterjs/analyzer) native binding. Upstream does not publish license metadata for per-platform binding package; main package is evaluated separately. Not modified by OmniRoute, used as transitive dep.",
+      "risk": "low",
+      "reviewAt": "v4.0.0"
+    },
     "dompurify": {
       "license": "(MPL-2.0 OR Apache-2.0)",
       "justification": "dompurify is dual-licensed: MPL-2.0 OR Apache-2.0. The Apache-2.0 option is permissive and compatible with MIT. OmniRoute uses it indirectly via monaco-editor and mermaid (UI rendering). The gate expression matcher already accepts (MPL-2.0 OR Apache-2.0) as an allowed expression, but this exception is kept for explicitness and audit trail.",
