@@ -104,13 +104,13 @@ Keep this file updated whenever the overlay adds or removes a Railway-specific f
 
 ---
 
-## 🔔 Notification — Sync Complete (2026-08-23)
+## Notification — Sync Complete (2026-08-23) — Updated to main (railway-deploy now on 3.8.50 line)
 
-> **For the user:** This spec was re-audited on **2026-08-23**.
+> **For the user:** This spec was re-audited and **pushed only to `railway-deploy`** on **2026-08-23** (second sync).
 >
-> - **Only `railway-deploy` is modified per Railway.com** — verified via `git diff release/v3.8.49..railway-deploy` = 34 files (469 ins): `Dockerfile.railway` (225 lines, no BuildKit cache mounts), `railway.json` (`DOCKERFILE`), `scripts/check-permissions.sh` (volume `chown -R node:node` + `su` drop), quality-gate shims (`check-*.mjs`), dashboard log hygiene. `release/v3.8.49` carries **no Railway infra** — only this doc (`docs/ops/RAILWAY_DEPLOY.md`) + deepwork `.slim/deepwork/` ignore (both intentional, not infra). It remains mergeable to `upstream/release/v3.8.49`.
-> - **Sync:** Both branches pulled and rebased to `upstream/release/v3.8.49` tip `930018fd1` (`5 ahead` on `railway-deploy`, `2 ahead` on `release` for docs). `railway-deploy` is `0 behind` its base; the `1465 behind` you see on GitHub is vs `upstream/release/v3.8.50` (default branch) — expected pin to `3.8.49`.
-> - **Pushed to `origin`:** `release/v3.8.49` (`69caabdf2`/`429aa3cb5`) + `railway-deploy` (`522cccb35`/`2aefa092f`) — verified `git ls-remote --heads origin` = exactly 2 branches (`origin/release/v3.8.49`, `origin/railway-deploy`). Accidental `chore/bank-ratchet-*` remains deleted.
-> - **Build:** `fumadocs` frontmatter (`title`/`lastUpdated`) fixed on both branches — Railway `Dockerfile.railway` build now passes (previous `MDX invalid frontmatter` resolved). Deploy from **`railway-deploy`** (not `release`) — it alone has `Dockerfile.railway`/`railway.json`.
->
-> Next sync: run the 3-step snippet in _How to Keep the Branches Synced_ above. Keep this notification updated on each sync.
+> - **Only `railway-deploy` is modified per Railway.com** — verified: `railway-deploy` now at `9b540b865` = `origin/railway-deploy` `105842612` + 6 overlay commits (Dockerfile.railway 225 lines, railway.json DOCKERFILE, check-permissions.sh volume chown, quality shims, log hygiene, docs). `release/v3.8.49` stays at `69caabdf2` (2 ahead of `upstream/release/v3.8.49` `930018fd1` for docs only, **no Railway infra** — remains mergeable). The large `git diff release..railway` (4968 files) is the upstream 3.8.49→3.8.50 train (1465 commits), not Railway infra; Railway isolation is verified via `git diff upstream/HEAD..railway-deploy` = ~34 files.
+> - **Sync with main:** `railway-deploy` was behind main (GitHub showed 17 ahead / 1465 behind vs `upstream/release/v3.8.50`). Pulled `origin/railway-deploy` (`105842612` = 3 behind `upstream/HEAD` `62ab93d78`), rebased overlay (38f3aac6b, 5e783a215, 5578f3287, 1965ae7bb, d4c778a04, 9b540b865) — now `9b540b865` is 6 ahead / 3 behind `upstream/HEAD` (will catch remaining 3 on next pull). `release` unchanged.
+> - **Pushed:** `railway-deploy` `105842612..9b540b865` to `origin` (fast-forward). `release` not modified this sync (stays 2-branch invariant). Verified `git ls-remote --heads origin` = 2 branches (`origin/release/v3.8.49`, `origin/railway-deploy`).
+> - **Build:** `fumadocs` frontmatter (`title`/`lastUpdated`) fixed on both branches (previous `MDX invalid frontmatter` resolved). `Dockerfile.railway` build now passes on Railway. Deploy from **`railway-deploy`** only.
+
+Next sync: `git fetch --all --prune` then re-apply overlay via cherry-pick as documented in _How to Keep the Branches Synced_. Keep this notification updated on each sync.
