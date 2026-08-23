@@ -552,9 +552,12 @@ export const webFetchInput = z.object({
     .min(1, "URL is required")
     .describe("The URL to fetch content from"),
   provider: z
-    .enum(["firecrawl", "jina-reader", "tavily-search", "tinyfish"])
+    .enum(["firecrawl", "jina-reader", "tavily-search", "tinyfish", "context7"])
     .optional()
-    .describe("Specific fetch provider to use (default: first available)"),
+    .describe(
+      "Specific fetch provider to use (default: first available). " +
+        "context7 expects a library reference URL (context7.com/<owner>/<repo>) and is explicit-only."
+    ),
   format: z
     .enum(["markdown", "html", "links", "screenshot"])
     .optional()
@@ -587,6 +590,7 @@ export const webFetchOutput = z.object({
     .object({
       title: z.string().nullable(),
       description: z.string().nullable(),
+      truncated: z.boolean().optional(),
     })
     .nullable(),
   screenshot_url: z.string().nullable(),
@@ -595,7 +599,7 @@ export const webFetchOutput = z.object({
 export const webFetchTool: McpToolDefinition<typeof webFetchInput, typeof webFetchOutput> = {
   name: "omniroute_web_fetch",
   description:
-    "Fetches and extracts content from a URL using OmniRoute's web fetch gateway. Supports multiple providers (Firecrawl, Jina Reader, Tavily, TinyFish) with automatic failover. Returns the page content as markdown, HTML, links, or screenshot, along with metadata.",
+    "Fetches and extracts content from a URL using OmniRoute's web fetch gateway. Supports multiple providers (Firecrawl, Jina Reader, Tavily, TinyFish, Context7 library docs) with automatic failover. Returns the page content as markdown, HTML, links, or screenshot, along with metadata.",
   inputSchema: webFetchInput,
   outputSchema: webFetchOutput,
   scopes: ["execute:search"],

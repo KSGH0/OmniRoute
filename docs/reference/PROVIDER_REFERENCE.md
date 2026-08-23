@@ -1,16 +1,16 @@
 ---
 title: "Provider Reference"
 version: 3.8.50
-lastUpdated: 2026-08-22
+lastUpdated: 2026-08-23
 ---
 
 # Provider Reference
 
 > **Auto-generated** from `src/shared/constants/providers.ts` — do not edit by hand.
 > Regenerate with: `npm run gen:provider-reference`
-> **Last generated:** 2026-08-22
+> **Last generated:** 2026-08-23
 
-Total providers: **348**. See category breakdown below.
+Total providers: **351**. See category breakdown below.
 
 ## Categories
 
@@ -34,7 +34,7 @@ Use the dashboard at `/dashboard/providers` to enable, configure, and test each 
 
 ---
 
-## No-auth Providers (no key required) (12)
+## No-auth Providers (no key required) (13)
 
 | ID | Alias | Name | Tags | Website | Notes | Tool calling |
 |----|-------|------|------|---------|-------|--------------|
@@ -42,6 +42,7 @@ Use the dashboard at `/dashboard/providers` to enable, configure, and test each 
 | `auggie` | `aug` | Augment (Auggie CLI) | No-auth | [link](https://augmentcode.com) | No API key stored by OmniRoute. Install the Auggie CLI and run `auggie login` on this machine, then OmniRoute spawns it locally for each request. | — |
 | `chipotle` | `pepper` | Chipotle Pepper AI (Free) | No-auth | [link](https://amelia.chipotle.com) | No credentials required. Uses Chipotle's public support chatbot via reverse-engineered SockJS/STOMP protocol. | — |
 | `cloudflare-playground` | `cfp` | Cloudflare AI Playground | No-auth | [link](https://playground.ai.cloudflare.com) | No credentials required — anonymous browser sessions over a reverse-engineered cf_agent WebSocket protocol (Playwright transport). | — |
+| `codex-app-server` | `cxa` | OpenAI Codex (App-Server) | No-auth | [link](https://developers.openai.com/codex/cli) | No token stored by OmniRoute. The Codex CLI app-server manages its own ChatGPT sign-in (~/.codex/auth.json, auto-refreshed). Use “Sign in with ChatGPT” if the CLI is not yet authenticated. | — |
 | `devin-cli-agentic` | `dva` | Devin CLI Agentic Bridge | No-auth | [link](https://docs.devin.ai/work-with-devin/devin-cli) | Authentication is owned by the official Devin CLI in its isolated bridge volume. | emulated |
 | `duckduckgo-web` | `ddgw` | DuckDuckGo AI Chat | No-auth | [link](https://duckduckgo.com/duckchat) | No credentials required — DuckDuckGo AI Chat is anonymous and free. | emulated |
 | `felo-web` | `felo` | Felo | No-auth | [link](https://felo.ai) | No credentials required — Felo is a free, no-signup chat/search aggregator. | — |
@@ -103,7 +104,7 @@ Use the dashboard at `/dashboard/providers` to enable, configure, and test each 
 | `huggingchat` | `huggingchat` | HuggingChat (Free) | Web cookie | [link](https://huggingface.co/chat) | Paste the full Cookie header from huggingface.co/chat (DevTools → Network → /chat/conversation → Request Headers → Cookie). It should include hf-chat and may also include token / aws-waf-token. | — |
 | `hyperagent` | `ha` | HyperAgent (Unofficial/Experimental) | Web cookie | [link](https://hyperagent.com) | Paste the full Cookie header from hyperagent.com (DevTools → Network → any request → Request Headers → Cookie). Session cookies power chat + billing usage. | — |
 | `inner-ai` | `in-ai` | Inner.ai (Subscription) | Web cookie | [link](https://app.innerai.com) | Paste your token cookie and email separated by a space: open DevTools → Application → Cookies → .innerai.com, copy the token value, then append a space and your Inner.ai login email. Example: eyJhbG... user@example.com | emulated |
-| `kimi-web` | `kimi-web` | Kimi Web | Web cookie | [link](https://www.kimi.com/code?aff=omniroute) | Paste access_token from www.kimi.com DevTools → Application → Local Storage. A legacy kimi-auth cookie is also accepted. | — |
+| `kimi-web` | `kimi-web` | Kimi Web | Web cookie | [link](https://www.kimi.ai) | Paste access_token from www.kimi.ai DevTools → Application → Local Storage. A legacy kimi-auth cookie is also accepted. | — |
 | `lmarena` | `lma` | Arena (Free) | Web cookie | [link](https://arena.ai) | Paste the full Cookie header from arena.ai (DevTools → Network → request → Cookie). Include arena-auth-prod-v1.0/.1… and cf_clearance/__cf_bm when present. OmniRoute uses Chrome TLS impersonation; if Arena still 403s, set providerSpecificData.recaptchaV3Token from a live browser session. | — |
 | `microsoft-designer-web` | `msdesigner` | Microsoft Designer (Image Generation) | Web cookie | [link](https://designer.microsoft.com) | Sign in at designer.microsoft.com, then open DevTools → Network, generate an image, and find the request to DallE.ashx?action=GetDallEImagesCogSci. Copy the value of its Authorization: Bearer header (the access_token — no 'Bearer ' prefix). The token is short-lived; this is an unofficial, reverse-engineered integration. | — |
 | `muse-spark-web` | `ms-web` | Muse Spark Web (Meta AI) | Web cookie | [link](https://www.meta.ai) | Paste your ecto_1_sess cookie AND the ecto1:... WS auth token from meta.ai. Capture the ecto1: token in DevTools → Network → WS → the clippy request's Authorization query param. Example: ecto_1_sess=4240a308...NVDg0; ecto1:ABCD... | emulated |
@@ -121,7 +122,7 @@ Use the dashboard at `/dashboard/providers` to enable, configure, and test each 
 | `zai-web` | `zw` | Z.ai Web | Web cookie | [link](https://chat.z.ai) | Copy the "token" value from chat.z.ai → DevTools → Application → Local Storage. Do not copy cookies; OmniRoute handles the per-request CAPTCHA through its browser transport. | — |
 | `zenmux-free` | `zmf` | ZenMux Free (Web) | Web cookie | [link](https://zenmux.ai) | Login at zenmux.ai, then export all cookies using EditThisCookie or Cookie-Editor and paste the full Cookie header string here. Refresh every ~30 days. | — |
 
-## API Key Providers (paid / paid-with-free-credits) (231)
+## API Key Providers (paid / paid-with-free-credits) (232)
 
 | ID | Alias | Name | Tags | Website | Notes |
 |----|-------|------|------|---------|-------|
@@ -198,11 +199,11 @@ Use the dashboard at `/dashboard/providers` to enable, configure, and test each 
 | `freemodel-dev` | `fmd` | FreeModel.dev | API key | [link](https://freemodel.dev) | $300 free credits on signup — no credit card required. Access GPT-5.4 and GPT-5.5 (OpenAI's latest flagship models) through an OpenAI-compatible API. |
 | `freetheai` | `fta` | FreeTheAi | API key, aggregator | [link](https://freetheai.xyz) | Join the FreeTheAi Discord to get your free API key. |
 | `friendliai` | `friendli` | FriendliAI | API key | [link](https://friendli.ai) | Free tier for serverless inference — no credit card required |
-| `g4f-gemini` | `g4fgem` | g4f.space — Gemini | API key, aggregator | [link](https://g4f.space) | No auth required. Free tier is limited to 5 requests/minute — sign up at g4f.dev/members.html for higher limits. |
-| `g4f-groq` | `g4fgroq` | g4f.space — Groq | API key, aggregator | [link](https://g4f.space) | No auth required. Free tier is limited to 5 requests/minute — sign up at g4f.dev/members.html for higher limits. |
-| `g4f-nvidia` | `g4fnv` | g4f.space — NVIDIA | API key, aggregator | [link](https://g4f.space) | No auth required. Free tier is limited to 5 requests/minute — sign up at g4f.dev/members.html for higher limits. |
-| `g4f-ollama` | `g4foll` | g4f.space — Ollama | API key, aggregator | [link](https://g4f.space) | No auth required. Free tier is limited to 5 requests/minute — sign up at g4f.dev/members.html for higher limits. |
-| `g4f-pollinations` | `g4fpol` | g4f.space — Pollinations | API key, aggregator | [link](https://g4f.space) | No auth required. Free tier is limited to 5 requests/minute — sign up at g4f.dev/members.html for higher limits. |
+| `g4f-gemini` | `g4fgem` | g4f.space — Gemini | API key, aggregator | [link](https://g4f.space) | Anonymous use now needs proof-of-work credits baked at g4f.dev/chat — sign up at g4f.dev/members.html for a member key. |
+| `g4f-groq` | `g4fgroq` | g4f.space — Groq | API key, aggregator | [link](https://g4f.space) | Anonymous use now needs proof-of-work credits baked at g4f.dev/chat — sign up at g4f.dev/members.html for a member key. |
+| `g4f-nvidia` | `g4fnv` | g4f.space — NVIDIA | API key, aggregator | [link](https://g4f.space) | Anonymous use now needs proof-of-work credits baked at g4f.dev/chat — sign up at g4f.dev/members.html for a member key. |
+| `g4f-ollama` | `g4foll` | g4f.space — Ollama | API key, aggregator | [link](https://g4f.space) | Anonymous use now needs proof-of-work credits baked at g4f.dev/chat — sign up at g4f.dev/members.html for a member key. |
+| `g4f-pollinations` | `g4fpol` | g4f.space — Pollinations | API key, aggregator | [link](https://g4f.space) | Anonymous use now needs proof-of-work credits baked at g4f.dev/chat — sign up at g4f.dev/members.html for a member key. |
 | `galadriel` | `galadriel` | Galadriel | API key | [link](https://galadriel.com) | ⚠️ **DEPRECATED.** api.galadriel.ai no longer resolves (sweep 2026-06-19); the inference API appears discontinued. |
 | `gemini` | `gemini` | Gemini (Google AI Studio) | API key | [link](https://aistudio.google.com) | Free tier available through Google AI Studio; current per-model quotas and regional limits apply |
 | `getgoapi` | `ggo` | GoAPI | API key, aggregator | [link](https://api.getgoapi.com) | — |
@@ -243,6 +244,7 @@ Use the dashboard at `/dashboard/providers` to enable, configure, and test each 
 | `llm-kiwi` | `llmkiwi` | LLM.Kiwi | API key, aggregator | [link](https://llm.kiwi) | Free plan exposes auto and hrLLM; the published 40 requests/hour limit applies to hrLLM. |
 | `llm7` | `llm7` | LLM7.io | API key | [link](https://llm7.io) | Use any non-empty key (for example 'unused'). If older built-in models return model_unavailable, use Available Models → Import from /models or Auto-Sync; verified live model: gemini-3.1-flash-lite. |
 | `llmgateway` | `llmgateway` | LLM Gateway | API key, aggregator | [link](https://llmgateway.io) | Hosted Free plan: free-priced models are limited to 5 requests per 10 minutes when the account has no credits. |
+| `logfare` | `logfare` | Logfare | API key, aggregator | [link](https://logfare.ai) | Create a free account at https://logfare.ai/register (username/password, no email verification) to get an instant API key, then paste it here as a Bearer token. |
 | `longcat` | `lc` | LongCat AI | API key | [link](https://longcat.chat/platform/docs) | Free: one-time 10M-token grant after account signup + KYC verification (LongCat-2.0). One-time only — not a recurring daily/monthly allowance. |
 | `magnific` | `freepik` | Magnific | API key, image | [link](https://www.magnific.com) | Get an API key at magnific.com/user/api-keys (header x-magnific-api-key). Legacy Freepik developer keys still work. |
 | `maritalk` | `maritalk` | Maritalk | API key | [link](https://www.maritaca.ai) | — |
@@ -376,11 +378,12 @@ Use the dashboard at `/dashboard/providers` to enable, configure, and test each 
 | `vllm` | `vllm` | vLLM | Local, self-hosted | [link](https://github.com/vllm-project/vllm) | API key optional. Configure the local vLLM OpenAI-compatible base URL (default: http://localhost:8000/v1). |
 | `xinference` | `xinference` | XInference | Local, self-hosted | [link](https://inference.readthedocs.io) | API key optional. Configure the local XInference OpenAI-compatible base URL (default: http://localhost:9997/v1). |
 
-## Search Providers (13)
+## Search Providers (14)
 
 | ID | Alias | Name | Tags | Website | Notes |
 |----|-------|------|------|---------|-------|
 | `brave-search` | `brave-search` | Brave Search | Search | [link](https://brave.com/search/api) | Subscription token from Brave Search API dashboard |
+| `context7` | `context7` | Context7 (library docs) | Search | [link](https://context7.com) | API key optional (ctx7sk-...) — anonymous tier works without a key; a key raises the rate limit |
 | `exa-search` | `exa-search` | Exa Search | Search | [link](https://exa.ai) | API key from dashboard.exa.ai |
 | `firecrawl` | `fc` | Firecrawl | Search | [link](https://firecrawl.dev) | API key from firecrawl.dev/app/api-keys (or set your self-hosted Firecrawl base URL) |
 | `google-pse-search` | `google-pse` | Google Programmable Search | Search | [link](https://developers.google.com/custom-search/v1/overview) | Requires a Google API key and your Programmable Search Engine ID (cx) |
@@ -436,7 +439,7 @@ Use the dashboard at `/dashboard/providers` to enable, configure, and test each 
 
 - Catalog: [`src/shared/constants/providers.ts`](../../src/shared/constants/providers.ts)
 - Registry (per-model details): [`open-sse/config/providerRegistry.ts`](../../open-sse/config/providerRegistry.ts)
-- Executors: [`open-sse/executors/`](../../open-sse/executors/) (106 implementations)
+- Executors: [`open-sse/executors/`](../../open-sse/executors/) (108 implementations)
 - Translators: [`open-sse/translator/`](../../open-sse/translator/)
 
 ## See Also

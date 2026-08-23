@@ -4,6 +4,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
+type CoreModule = typeof import("../../src/lib/db/core.ts");
+
 // Shared across all tests — the module caches DATA_DIR / SQLITE_FILE at load time,
 // so we must create the temp dir and import exactly once.
 type CoreModule = typeof import("../../src/lib/db/core.ts");

@@ -690,7 +690,7 @@ async function handleXSearch(args: { query: string; max_results?: number }) {
 
 async function handleWebFetch(args: {
   url: string;
-  provider?: "firecrawl" | "jina-reader" | "tavily-search" | "tinyfish";
+  provider?: "firecrawl" | "jina-reader" | "tavily-search" | "tinyfish" | "context7";
   format?: "markdown" | "html" | "links" | "screenshot";
   include_metadata?: boolean;
   depth?: number;

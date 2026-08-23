@@ -37,7 +37,6 @@ export interface ReasoningInputPolicyOptions {
 export interface ReasoningInputPolicyResult {
   incompatibleReasoning: boolean;
 }
-
 export function resolveReasoningTransport(
   provider: string | null | undefined,
   preserveEncryptedReasoning = false
@@ -45,18 +44,6 @@ export function resolveReasoningTransport(
   const normalized = typeof provider === "string" ? provider.trim().toLowerCase() : "";
   const transport = REASONING_TRANSPORTS.get(normalized);
   return transport ?? (preserveEncryptedReasoning ? "opaque" : "plaintext");
-}
-
-export function createReasoningTransportIncompatibleError(): Error & {
-  statusCode: number;
-  errorType: string;
-} {
-  const error = new Error(
-    "Reasoning continuation is not compatible with the selected target"
-  ) as Error & { statusCode: number; errorType: string };
-  error.statusCode = 400;
-  error.errorType = "reasoning_transport_incompatible";
-  return error;
 }
 
 function asRecord(value: unknown): JsonRecord | null {
@@ -101,11 +88,12 @@ function hasChatPlaintextReasoning(record: JsonRecord): boolean {
 
 /**
  * Returns only provider-authentic plaintext continuation state. Display summaries
- * are excluded, and a record carrying opaque state is never cross-converted.
+ * and opaque-only records are excluded. Explicit plaintext remains independently
+ * portable when the same record also carries an opaque companion (#10949).
  */
 export function extractReplayableResponsesReasoningText(value: unknown): string {
   const record = asRecord(value);
-  if (!record || record.type !== "reasoning" || hasOpaqueReasoningState(record)) return "";
+  if (!record || record.type !== "reasoning") return "";
   if (!Array.isArray(record.content)) return "";
 
   return record.content
@@ -307,9 +295,9 @@ function sanitizeResponsesInput(
 }
 
 /**
- * Applies one protocol-independent compatibility decision before request translation.
- * Plaintext is portable by default; opaque state requires an explicit target declaration.
- * Display summaries do not affect compatibility; stateless input drops orphan summaries.
+ * Projects reasoning continuation onto the selected target transport.
+ * Incompatible active state is dropped by default; combo routing may reject an
+ * attempt instead so it can fall through without mutating the request.
  */
 export function applyReasoningInputPolicy(
   body: Record<string, unknown>,
@@ -321,14 +309,17 @@ export function applyReasoningInputPolicy(
     inputFormat === "responses"
       ? inspectResponsesReasoning(body.input)
       : inspectChatReasoning(body.messages);
-  const incompatibleReasoning = !isReasoningCompatible(inspection, transport);
+  const mixedState = inspection.hasPlaintext && inspection.hasOpaque;
+  const incompatibleReasoning = !mixedState && !isReasoningCompatible(inspection, transport);
+  // Mixed plaintext + opaque input (#10949) is never a rejection: it is projected
+  // onto the target transport by the per-item sanitizers below.
 
-  if (incompatibleReasoning && options.onIncompatibleReasoning !== "drop") {
+  if (incompatibleReasoning && options.onIncompatibleReasoning === "reject") {
     return { incompatibleReasoning: true };
   }
 
   if (inputFormat === "chat") {
-    if (incompatibleReasoning && Array.isArray(body.messages)) {
+    if ((incompatibleReasoning || mixedState) && Array.isArray(body.messages)) {
       body.messages = dropIncompatibleChatReasoning(body.messages, transport);
     }
     return { incompatibleReasoning: false };
@@ -343,12 +334,75 @@ export function applyReasoningInputPolicy(
       },
     ];
   }
-  if (!Array.isArray(body.input)) return { incompatibleReasoning: false };
-  body.input = sanitizeResponsesInput(
-    body.input,
-    transport,
-    incompatibleReasoning,
-    body.store === false
-  );
+  if (Array.isArray(body.input)) {
+    body.input = sanitizeResponsesInput(
+      body.input,
+      transport,
+      incompatibleReasoning || mixedState,
+      body.store === false
+    );
+  }
   return { incompatibleReasoning: false };
+}
+
+export function createReasoningTransportIncompatibleError(): Error & {
+  statusCode: number;
+  errorType: string;
+} {
+  const error = new Error(
+    "Reasoning continuation is not compatible with the selected target"
+  ) as Error & { statusCode: number; errorType: string };
+  error.statusCode = 400;
+  error.errorType = "reasoning_transport_incompatible";
+  return error;
+}
+
+export const REASONING_FALLBACK_HEADER = "x-omniroute-reasoning-fallback";
+
+function readFallbackHeader(
+  headers: Headers | Record<string, unknown> | null | undefined
+): string | null {
+  if (!headers) return null;
+  if (headers instanceof Headers) {
+    const value = headers.get(REASONING_FALLBACK_HEADER);
+    return typeof value === "string" ? value : null;
+  }
+  if (typeof headers !== "object") return null;
+  for (const [key, value] of Object.entries(headers)) {
+    if (key.toLowerCase() === REASONING_FALLBACK_HEADER && typeof value === "string") {
+      return value;
+    }
+  }
+  return null;
+}
+
+/**
+ * Resolves the action taken when inbound continuation reasoning is incompatible with the selected
+ * target's reasoning transport. Combo steps keep their explicit configuration. Single-target
+ * requests default to "drop" so replayed summary-only reasoning from agentic clients does not
+ * hard-fail every continuation turn; an operator (OMNIROUTE_SINGLE_TARGET_REASONING_FALLBACK=reject)
+ * or caller (x-omniroute-reasoning-fallback: reject) may explicitly enforce "reject".
+ */
+export function resolveIncompatibleReasoningAction(options: {
+  reasoningTransportFallback?: string | null;
+  isComboStep?: boolean;
+  headers?: Headers | Record<string, unknown> | null;
+  env?: Record<string, string | undefined>;
+}): "drop" | "reject" {
+  if (options.reasoningTransportFallback === "drop") return "drop";
+  if (options.isComboStep && options.reasoningTransportFallback === "skip") return "reject";
+
+  const headerRaw = readFallbackHeader(options.headers)?.trim().toLowerCase();
+  if (headerRaw === "reject") return "reject";
+  if (headerRaw === "drop") return "drop";
+
+  const envRaw = (
+    options.env ?? process.env
+  ).OMNIROUTE_SINGLE_TARGET_REASONING_FALLBACK?.trim().toLowerCase();
+  if (envRaw === "reject") return "reject";
+  if (envRaw === "drop") return "drop";
+
+  // Default to "drop" for single-target requests so multi-turn agentic loops on direct
+  // Codex / OpenAI targets work seamlessly out of the box.
+  return "drop";
 }
