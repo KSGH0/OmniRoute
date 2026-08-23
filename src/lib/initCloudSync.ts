@@ -47,6 +47,27 @@ function fixStaleLocalProxyPort(): void {
       return;
     }
 
+    // Also clean stale env proxy vars that point to localhost:20128.
+    // Railway has no forward proxy at 20128 — leaving HTTP_PROXY=localhost:20128
+    // makes every CredentialHealth fetch try the dead proxy.
+    const envProxyVars = [
+      "HTTP_PROXY",
+      "http_proxy",
+      "HTTPS_PROXY",
+      "https_proxy",
+      "ALL_PROXY",
+      "all_proxy",
+    ];
+    let clearedEnv = 0;
+    for (const v of envProxyVars) {
+      const val = process.env[v];
+      if (val && val.includes(":20128")) {
+        console.log(`[ServerInit] Clearing stale ${v}=${val} (contains :20128, PORT is ${port})`);
+        delete process.env[v];
+        clearedEnv++;
+      }
+    }
+
     // Require DB ready — caller ensures initializeCloudSync() already ran.
 
     const { getDbInstance } = require("@/lib/db/core");
@@ -65,8 +86,11 @@ function fixStaleLocalProxyPort(): void {
       h.trim().toLowerCase() === "localhost" ||
       h.trim().toLowerCase().includes("::1");
     const allPort20128 = db
-      .prepare("SELECT id, host FROM proxy_registry WHERE port = 20128")
-      .all() as Array<{ id: string; host: string }>;
+      .prepare(
+        "SELECT id, host, port FROM proxy_registry WHERE port = 20128 OR cast(port as text) = '20128'"
+      )
+      .all() as Array<{ id: string; host: string; port: string | number }>;
+    console.log(`[ServerInit] Found ${allPort20128.length} proxy_registry row(s) with port 20128`);
     for (const { id, host } of allPort20128) {
       const h = (host || "").trim().toLowerCase();
       // On Railway, any 20128 proxy is stale if current port != 20128, but be conservative: only delete if host is local/private or if no other 20128 proxies should exist.
