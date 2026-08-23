@@ -101,3 +101,16 @@ git diff --stat release/v3.8.49..railway-deploy
 ```
 
 Keep this file updated whenever the overlay adds or removes a Railway-specific file.
+
+---
+
+## 🔔 Notification — Sync Complete (2026-08-23)
+
+> **For the user:** This spec was re-audited on **2026-08-23**.
+>
+> - **Only `railway-deploy` is modified per Railway.com** — verified via `git diff release/v3.8.49..railway-deploy` = 34 files (469 ins): `Dockerfile.railway` (225 lines, no BuildKit cache mounts), `railway.json` (`DOCKERFILE`), `scripts/check-permissions.sh` (volume `chown -R node:node` + `su` drop), quality-gate shims (`check-*.mjs`), dashboard log hygiene. `release/v3.8.49` carries **no Railway infra** — only this doc (`docs/ops/RAILWAY_DEPLOY.md`) + deepwork `.slim/deepwork/` ignore (both intentional, not infra). It remains mergeable to `upstream/release/v3.8.49`.
+> - **Sync:** Both branches pulled and rebased to `upstream/release/v3.8.49` tip `930018fd1` (`5 ahead` on `railway-deploy`, `2 ahead` on `release` for docs). `railway-deploy` is `0 behind` its base; the `1465 behind` you see on GitHub is vs `upstream/release/v3.8.50` (default branch) — expected pin to `3.8.49`.
+> - **Pushed to `origin`:** `release/v3.8.49` (`69caabdf2`/`429aa3cb5`) + `railway-deploy` (`522cccb35`/`2aefa092f`) — verified `git ls-remote --heads origin` = exactly 2 branches (`origin/release/v3.8.49`, `origin/railway-deploy`). Accidental `chore/bank-ratchet-*` remains deleted.
+> - **Build:** `fumadocs` frontmatter (`title`/`lastUpdated`) fixed on both branches — Railway `Dockerfile.railway` build now passes (previous `MDX invalid frontmatter` resolved). Deploy from **`railway-deploy`** (not `release`) — it alone has `Dockerfile.railway`/`railway.json`.
+>
+> Next sync: run the 3-step snippet in _How to Keep the Branches Synced_ above. Keep this notification updated on each sync.
