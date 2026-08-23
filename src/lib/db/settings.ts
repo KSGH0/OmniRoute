@@ -249,6 +249,11 @@ export async function getSettings() {
     // #9418: Opt-in filter that hides no-think/* gateway variants from the /v1/models catalog.
     // Routing still works for hidden ids sent explicitly.
     hideNoThinkVariants: false,
+    // F2 (railway-deploy overlay): show Free/$ pricing badges in model pickers. Display-only.
+    showPricingBadges: true,
+    // F1 (railway-deploy overlay): global kill-switch for the ranked-autobalance scheduler.
+    // Per-combo config.rankedAutobalance.autoRank must also be true for any rerank to run.
+    rankedAutobalanceEnabled: false,
     // #6977: Opt-in per-connection auto-ping that warms a Codex OAuth connection's
     // quota window right after it resets, so the first real request doesn't land in
     // a cold window. `connections` maps connection id -> enabled. Default empty map

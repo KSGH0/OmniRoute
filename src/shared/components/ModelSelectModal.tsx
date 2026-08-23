@@ -147,6 +147,41 @@ export default function ModelSelectModal({
   const [testingProviders, setTestingProviders] = useState(false);
   const [testProgress, setTestProgress] = useState<{ done: number; total: number } | null>(null);
   const [modelTestStatus, setModelTestStatus] = useState<Record<string, "ok" | "error">>({});
+  // F2: Pricing map for badge display (free vs paid) — additive, no catalog filtering
+  const [pricingMap, setPricingMap] = useState<
+    Record<string, Record<string, { input?: number; output?: number }>>
+  >({});
+  const [showPricingBadges, setShowPricingBadges] = useState(true);
+
+  const fetchPricing = async () => {
+    try {
+      const res = await fetch("/api/pricing");
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data && typeof data === "object" && !Array.isArray(data))
+        setPricingMap(data as Record<string, Record<string, { input?: number; output?: number }>>);
+    } catch {
+      // ignore — badge will show fallback
+    }
+  };
+
+  const fetchPricingToggle = async () => {
+    try {
+      const res = await fetch("/api/settings");
+      if (!res.ok) return;
+      const data = await res.json();
+      setShowPricingBadges(data.showPricingBadges !== false);
+    } catch {
+      // default true
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchPricing();
+      fetchPricingToggle();
+    }
+  }, [isOpen]);
 
   const fetchCombos = async () => {
     try {
@@ -1093,6 +1128,21 @@ export default function ModelSelectModal({
                           fail
                         </span>
                       )}
+                      {(() => {
+                        if (!showPricingBadges) return null;
+                        const pr = pricingMap[providerId]?.[model.id];
+                        if (!pr || (pr.input == null && pr.output == null)) return null;
+                        const isFree = (pr.input ?? 1) === 0 && (pr.output ?? 1) === 0;
+                        return (
+                          <span
+                            className={`ml-1 rounded px-1 py-px text-[9px] font-medium ${isFree ? "bg-sky-500/15 text-sky-700 dark:text-sky-300" : "bg-amber-500/15 text-amber-700 dark:text-amber-300"}`}
+                          >
+                            {isFree
+                              ? "Free • $0.00"
+                              : `$${Number(pr.input ?? 0).toFixed(2)}/$${Number(pr.output ?? 0).toFixed(2)}`}
+                          </span>
+                        );
+                      })()}
                     </button>
                   );
                 })}

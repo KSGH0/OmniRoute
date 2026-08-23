@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 
 import Card from "@/shared/components/Card";
 import { CardSkeleton } from "@/shared/components/Loading";
+import RankedAutobalanceToggle from "./RankedAutobalanceToggle";
 import {
   extractComboRuntimeConfig,
   getComboControlCenterTargets,
@@ -370,6 +371,26 @@ export default function ComboControlCenterClient({ comboId }: { comboId: string 
           t("providerAccountTelemetry")
         )}
       </div>
+
+      {/* F1: Ranked autobalance by speed — single toggle, no catalog filtering */}
+      <RankedAutobalanceToggle
+        comboId={combo.id}
+        comboName={combo.name}
+        config={runtimeConfig as Record<string, unknown>}
+        onUpdate={async (nextConfig) => {
+          try {
+            const res = await fetch(`/api/combos/${combo.id}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ config: nextConfig }),
+            });
+            if (!res.ok) throw new Error(String(res.status));
+            await load();
+          } catch {
+            // toast handled by load error
+          }
+        }}
+      />
 
       <Card className="p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
