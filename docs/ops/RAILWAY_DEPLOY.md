@@ -1,3 +1,8 @@
+---
+title: "Railway Deploy Branch — Deployment Overlay"
+lastUpdated: 2026-08-23
+---
+
 # Railway Deploy Branch — Deployment Overlay
 
 > **Source of truth for `railway-deploy`**. Future agents: read this before touching either branch.
