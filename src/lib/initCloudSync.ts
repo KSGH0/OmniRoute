@@ -36,13 +36,19 @@ function fixStaleLocalProxyPort(): void {
   try {
     const { port } = getRuntimePorts();
     const isOverridden = !!process.env.PORT || !!process.env.OMNIROUTE_PORT;
+    console.log(
+      `[ServerInit] fixStaleLocalProxyPort: check PORT=${port} isOverridden=${isOverridden} (process.env.PORT=${process.env.PORT || "unset"})`
+    );
     // Only act when PORT is overridden to something other than the default.
     // If port === 20128 but overridden (e.g. OMNIROUTE_PORT=20128) it's still
     // the default, no drift — skip.
-    if (!isOverridden || port === 20128) return;
+    if (!isOverridden || port === 20128) {
+      console.log("[ServerInit] fixStaleLocalProxyPort: skipped (no drift)");
+      return;
+    }
 
     // Require DB ready — caller ensures initializeCloudSync() already ran.
-     
+
     const { getDbInstance } = require("@/lib/db/core");
     const db = getDbInstance();
     const staleHosts = ["127.0.0.1", "localhost", "::1", "0.0.0.0", "[::1]"];
@@ -51,20 +57,34 @@ function fixStaleLocalProxyPort(): void {
     let fixedLegacy = 0;
 
     // 1) proxy_registry — delete stale localhost:20128 proxies entirely
-    for (const host of staleHosts) {
-      const rows = db
-        .prepare("SELECT id FROM proxy_registry WHERE host = ? AND port = 20128")
-        .all(host) as Array<{ id: string }>;
-      for (const { id } of rows) {
-        const delAssign = db.prepare("DELETE FROM proxy_assignments WHERE proxy_id = ?").run(id);
-        removedAssignments += delAssign.changes;
-        db.prepare("DELETE FROM proxy_registry WHERE id = ?").run(id);
-        removedProxies++;
-      }
+    // Broadened: any proxy with port 20128 that is a local/private address is stale on Railway (PORT=8080).
+    // Check both exact host match and any 20128 port with local host.
+    const localHostPattern = (h: string) =>
+      staleHosts.includes(h.trim().toLowerCase()) ||
+      h.trim().toLowerCase().startsWith("127.") ||
+      h.trim().toLowerCase() === "localhost" ||
+      h.trim().toLowerCase().includes("::1");
+    const allPort20128 = db
+      .prepare("SELECT id, host FROM proxy_registry WHERE port = 20128")
+      .all() as Array<{ id: string; host: string }>;
+    for (const { id, host } of allPort20128) {
+      const h = (host || "").trim().toLowerCase();
+      // On Railway, any 20128 proxy is stale if current port != 20128, but be conservative: only delete if host is local/private or if no other 20128 proxies should exist.
+      // For now, delete all 20128 when isOverridden — they were seeded at default and never valid on Railway.
+      const isLocal = localHostPattern(h) || h === "" || h === "0.0.0.0";
+      // Be aggressive on Railway: delete all 20128 proxies when PORT is overridden, they are from default seed.
+      // If you have a legitimate external proxy at 20128, set OMNIROUTE_PORT=20128 to skip this fix.
+      const shouldDelete = isLocal || isOverridden; // on Railway, delete all 20128
+      if (!shouldDelete) continue;
+      const delAssign = db.prepare("DELETE FROM proxy_assignments WHERE proxy_id = ?").run(id);
+      removedAssignments += delAssign.changes;
+      db.prepare("DELETE FROM proxy_registry WHERE id = ?").run(id);
+      removedProxies++;
     }
 
     // 2) Legacy key_value proxyConfig (pre-registry) — may store
-    //    {"global": {"host":"127.0.0.1","port":20128}} or provider/combo maps.
+    //    {"global": {"host":"127.0.0.1","port":20128}} or provider/combo maps,
+    //    or even a raw URL string like "http://127.0.0.1:20128".
     //    If any host:20128 entry is found, null it out so it doesn't shadow direct.
     try {
       const kvRows = db
@@ -75,17 +95,63 @@ function fixStaleLocalProxyPort(): void {
         try {
           parsed = JSON.parse(value);
         } catch {
+          // Value may be a raw URL string, not JSON — check for :20128
+          if (typeof value === "string" && value.includes(":20128")) {
+            // If it's a localhost:20128 URL, null it
+            if (
+              value.toLowerCase().includes("127.0.0.1") ||
+              value.toLowerCase().includes("localhost") ||
+              value.toLowerCase().includes("::1")
+            ) {
+              db.prepare(
+                "INSERT OR REPLACE INTO key_value (namespace, key, value) VALUES ('proxyConfig', ?, ?)"
+              ).run(key, JSON.stringify(null));
+              fixedLegacy++;
+            }
+          }
           continue;
         }
-        if (!parsed || typeof parsed !== "object") continue;
+        if (!parsed || typeof parsed !== "object") {
+          // Check raw string again
+          if (typeof value === "string" && value.includes(":20128")) {
+            if (
+              value.toLowerCase().includes("127.0.0.1") ||
+              value.toLowerCase().includes("localhost") ||
+              value.toLowerCase().includes("::1")
+            ) {
+              db.prepare(
+                "INSERT OR REPLACE INTO key_value (namespace, key, value) VALUES ('proxyConfig', ?, ?)"
+              ).run(key, JSON.stringify(null));
+              fixedLegacy++;
+            }
+          }
+          continue;
+        }
         // Global is a single object; providers/combos/keys are maps.
         const maybeFix = (obj: unknown): boolean => {
           if (!obj || typeof obj !== "object" || Array.isArray(obj)) return false;
           const o = obj as Record<string, unknown>;
           const host = typeof o.host === "string" ? o.host.trim().toLowerCase() : "";
           const p = Number(o.port);
-          return staleHosts.includes(host) && p === 20128;
+          // Also handle URL strings
+          if (typeof o.url === "string" && o.url.includes(":20128")) return true;
+          if (typeof o.proxyUrl === "string" && o.proxyUrl.includes(":20128")) return true;
+          return (
+            (staleHosts.includes(host) || host.includes("127.") || host.includes("::1")) &&
+            p === 20128
+          );
         };
+        // Also handle case where parsed itself is a URL string (not object)
+        if (typeof parsed === "string" && (parsed as string).includes(":20128")) {
+          const s = (parsed as string).toLowerCase();
+          if (s.includes("127.0.0.1") || s.includes("localhost") || s.includes("::1")) {
+            db.prepare(
+              "INSERT OR REPLACE INTO key_value (namespace, key, value) VALUES ('proxyConfig', ?, ?)"
+            ).run(key, JSON.stringify(null));
+            fixedLegacy++;
+            continue;
+          }
+        }
         let mutated = false;
         let newVal: unknown = parsed;
         if (key === "global" && maybeFix(parsed)) {
@@ -97,9 +163,22 @@ function fixStaleLocalProxyPort(): void {
             if (maybeFix(pv)) {
               delete map[scopeId];
               mutated = true;
+            } else if (typeof pv === "string" && (pv as string).includes(":20128")) {
+              const s = (pv as string).toLowerCase();
+              if (s.includes("127.0.0.1") || s.includes("localhost") || s.includes("::1")) {
+                delete map[scopeId];
+                mutated = true;
+              }
             }
           }
           newVal = map;
+        } else if (maybeFix(parsed)) {
+          // Fallback: parsed is a proxy object itself under unknown key
+          db.prepare(
+            "INSERT OR REPLACE INTO key_value (namespace, key, value) VALUES ('proxyConfig', ?, ?)"
+          ).run(key, JSON.stringify(null));
+          fixedLegacy++;
+          continue;
         }
         if (mutated) {
           db.prepare(
@@ -117,17 +196,17 @@ function fixStaleLocalProxyPort(): void {
         `[ServerInit] Removed ${removedProxies} stale local proxy(ies) at :20128 (hosts ${staleHosts.join(",")}) and ${fixedLegacy} legacy proxyConfig entries — PORT is ${port}, localhost:20128 is not a valid forward proxy on Railway. Health checks will now go direct.`
       );
       try {
-         
         const { bumpProxyRegistryGeneration } = require("@/lib/db/proxies/registryGeneration");
         bumpProxyRegistryGeneration();
       } catch {}
       try {
-         
         const { bumpProxyConfigGeneration } = require("@/lib/db/settings");
         bumpProxyConfigGeneration();
       } catch {}
     } else if (removedAssignments > 0) {
       console.log(`[ServerInit] Cleaned ${removedAssignments} stale proxy assignment(s) at :20128`);
+    } else {
+      console.log("[ServerInit] fixStaleLocalProxyPort: no stale proxies at :20128 found — clean");
     }
   } catch (err) {
     console.warn("[ServerInit] fixStaleLocalProxyPort skipped:", (err as Error)?.message);
