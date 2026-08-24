@@ -105,7 +105,19 @@ export async function syncPricingForProvider(providerId: string): Promise<number
     )
     .get(providerId) as { api_key: string } | undefined;
   if (!row?.api_key) return 0;
-  const apiPricing = await fetchApiPricingForProvider(providerId, String(row.api_key));
+  // api_key is encrypted at rest (enc:v1:...) — decrypt before using as bearer
+  let apiKey = String(row.api_key);
+  if (apiKey.startsWith("enc:v1:")) {
+    try {
+      const { decryptConnectionFields } = await import("./db/encryption");
+      const dec = decryptConnectionFields({ apiKey });
+      apiKey = String(dec?.apiKey || "");
+    } catch {
+      return 0;
+    }
+  }
+  if (!apiKey) return 0;
+  const apiPricing = await fetchApiPricingForProvider(providerId, apiKey);
   if (!apiPricing) return 0;
   const insert = db.prepare(
     "INSERT OR REPLACE INTO key_value (namespace, key, value) VALUES ('pricing_api_discovered', ?, ?)"
