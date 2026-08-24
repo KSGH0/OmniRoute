@@ -155,9 +155,47 @@ export default function ModelSelectModal({
 
   const fetchPricing = async () => {
     try {
-      const res = await fetch("/api/pricing");
-      if (!res.ok) return;
-      const data = await res.json();
+      // Primary: /api/pricing (requires management auth, works when admin)
+      let data: unknown = null;
+      try {
+        const res = await fetch("/api/pricing");
+        if (res.ok) data = await res.json();
+      } catch {}
+      // Fallback: /api/pricing/models (public catalog, includes pricing for all models)
+      if (
+        !data ||
+        typeof data !== "object" ||
+        Array.isArray(data) ||
+        Object.keys(data as object).length === 0
+      ) {
+        try {
+          const res2 = await fetch("/api/pricing/models");
+          if (res2.ok) {
+            const catalog = (await res2.json()) as Record<
+              string,
+              { models?: Array<{ id: string; pricing?: { input?: number; output?: number } }> }
+            >;
+            const fallback: Record<
+              string,
+              Record<string, { input?: number; output?: number }>
+            > = {};
+            for (const [prov, info] of Object.entries(catalog)) {
+              const models = (
+                info as {
+                  models?: Array<{ id: string; pricing?: { input?: number; output?: number } }>;
+                }
+              )?.models;
+              if (!Array.isArray(models)) continue;
+              for (const m of models) {
+                if (!m.id || !m.pricing) continue;
+                if (!fallback[prov]) fallback[prov] = {};
+                fallback[prov][m.id] = { input: m.pricing.input, output: m.pricing.output };
+              }
+            }
+            if (Object.keys(fallback).length > 0) data = fallback;
+          }
+        } catch {}
+      }
       if (data && typeof data === "object" && !Array.isArray(data))
         setPricingMap(data as Record<string, Record<string, { input?: number; output?: number }>>);
     } catch {

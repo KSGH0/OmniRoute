@@ -1,5 +1,9 @@
+import { useEffect, useState } from "react";
 import Button from "@/shared/components/Button";
-import { hasExactModelStepDuplicate, type ComboBuilderGlobalModelEntry } from "@/lib/combos/builderDraft";
+import {
+  hasExactModelStepDuplicate,
+  type ComboBuilderGlobalModelEntry,
+} from "@/lib/combos/builderDraft";
 
 type TranslationFn = {
   (key: string, values?: Record<string, unknown>): string;
@@ -49,6 +53,84 @@ export default function GlobalModelSearchPanel({
   onAddAll,
   t,
 }: Props) {
+  const [pricingMap, setPricingMap] = useState<
+    Record<string, Record<string, { input?: number; output?: number }>>
+  >({});
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        let data: unknown = null;
+        try {
+          const r = await fetch("/api/pricing");
+          if (r.ok) data = await r.json();
+        } catch {}
+        if (
+          !data ||
+          typeof data !== "object" ||
+          Array.isArray(data) ||
+          Object.keys(data as object).length === 0
+        ) {
+          try {
+            const r2 = await fetch("/api/pricing/models");
+            if (r2.ok) {
+              const catalog = (await r2.json()) as Record<
+                string,
+                { models?: Array<{ id: string; pricing?: { input?: number; output?: number } }> }
+              >;
+              const fb: Record<string, Record<string, { input?: number; output?: number }>> = {};
+              for (const [prov, info] of Object.entries(catalog)) {
+                const ms = (
+                  info as {
+                    models?: Array<{ id: string; pricing?: { input?: number; output?: number } }>;
+                  }
+                )?.models;
+                if (!Array.isArray(ms)) continue;
+                for (const m of ms) {
+                  if (!m.id || !m.pricing) continue;
+                  if (!fb[prov]) fb[prov] = {};
+                  fb[prov][m.id] = { input: m.pricing.input, output: m.pricing.output };
+                }
+              }
+              if (Object.keys(fb).length > 0) data = fb;
+            }
+          } catch {}
+        }
+        if (!cancelled && data && typeof data === "object" && !Array.isArray(data)) {
+          setPricingMap(
+            data as Record<string, Record<string, { input?: number; output?: number }>>
+          );
+        }
+      } catch {}
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const findPricing = (
+    providerId: string,
+    modelId: string
+  ): { input?: number; output?: number } | null => {
+    if (!providerId || !modelId) return null;
+    const norm = (s: string) => s.toLowerCase().trim();
+    const pLower = norm(providerId);
+    const mLower = norm(modelId);
+    let prov: Record<string, { input?: number; output?: number }> | undefined;
+    for (const [k, v] of Object.entries(pricingMap))
+      if (norm(k) === pLower) {
+        prov = v as Record<string, { input?: number; output?: number }>;
+        break;
+      }
+    if (!prov) return null;
+    for (const [k, v] of Object.entries(prov))
+      if (norm(k) === mLower) return v as { input?: number; output?: number };
+    const hy = mLower.replace(/\./g, "-");
+    for (const [k, v] of Object.entries(prov))
+      if (norm(k) === hy) return v as { input?: number; output?: number };
+    return null;
+  };
+
   return (
     <>
       <div className="flex items-center gap-1.5 mt-2.5 mb-2 p-1 bg-black/5 dark:bg-white/5 rounded-lg">
@@ -112,7 +194,8 @@ export default function GlobalModelSearchPanel({
                 className="shrink-0 text-xs"
               >
                 <span className="material-symbols-outlined text-[14px] mr-1">playlist_add</span>
-                {getI18nOrFallback(t, "builderGlobalAddAll", "Add all")} ({filteredGlobalModels.length})
+                {getI18nOrFallback(t, "builderGlobalAddAll", "Add all")} (
+                {filteredGlobalModels.length})
               </Button>
             )}
           </div>
@@ -142,9 +225,14 @@ export default function GlobalModelSearchPanel({
           <div className="max-h-[220px] overflow-y-auto rounded border border-black/10 dark:border-white/10 bg-white dark:bg-white/5 divide-y divide-black/5 dark:divide-white/5">
             {filteredGlobalModels.length === 0 ? (
               <div className="p-4 text-center text-xs text-text-muted">
-                {getI18nOrFallback(t, "builderGlobalNoResults", `No model found for "${globalSearchQuery}".`, {
-                  query: globalSearchQuery,
-                })}
+                {getI18nOrFallback(
+                  t,
+                  "builderGlobalNoResults",
+                  `No model found for "${globalSearchQuery}".`,
+                  {
+                    query: globalSearchQuery,
+                  }
+                )}
               </div>
             ) : (
               filteredGlobalModels.map((item) => {
@@ -155,7 +243,25 @@ export default function GlobalModelSearchPanel({
                     className="flex items-center justify-between px-3 py-2 text-xs hover:bg-black/[0.02] dark:hover:bg-white/[0.03]"
                   >
                     <div className="flex flex-col min-w-0 pr-2">
-                      <span className="font-semibold text-text-main truncate">{item.modelName}</span>
+                      <div className="flex items-center gap-1 min-w-0">
+                        <span className="font-semibold text-text-main truncate">
+                          {item.modelName}
+                        </span>
+                        {(() => {
+                          const pr = findPricing(item.providerId, item.modelId);
+                          if (!pr || (pr.input == null && pr.output == null)) return null;
+                          const isFree = (pr.input ?? 1) === 0 && (pr.output ?? 1) === 0;
+                          return (
+                            <span
+                              className={`shrink-0 rounded px-1 py-px text-[9px] font-medium ${isFree ? "bg-sky-500/15 text-sky-700 dark:text-sky-300" : "bg-amber-500/15 text-amber-700 dark:text-amber-300"}`}
+                            >
+                              {isFree
+                                ? "Free • $0.00"
+                                : `$${Number(pr.input ?? 0).toFixed(2)}/$${Number(pr.output ?? 0).toFixed(2)}`}
+                            </span>
+                          );
+                        })()}
+                      </div>
                       <span className="text-[10px] text-text-muted truncate">
                         {getI18nOrFallback(t, "builderGlobalProviderLabel", "Provider:")}{" "}
                         <strong className="text-text-main">{item.providerName}</strong> (
@@ -178,7 +284,9 @@ export default function GlobalModelSearchPanel({
                           : "bg-primary/10 text-primary hover:bg-primary/20 font-medium"
                       }`}
                     >
-                      <span className="material-symbols-outlined text-[13px]">{isAdded ? "check" : "add"}</span>
+                      <span className="material-symbols-outlined text-[13px]">
+                        {isAdded ? "check" : "add"}
+                      </span>
                       {isAdded
                         ? getI18nOrFallback(t, "builderGlobalAdded", "Added")
                         : getI18nOrFallback(t, "builderGlobalAdd", "Add")}
