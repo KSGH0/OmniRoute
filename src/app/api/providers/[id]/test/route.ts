@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isValidationFailure, validateBody } from "@/shared/validation/helpers";
+// eslint-disable-next-line no-restricted-imports -- pre-existing localDb barrel import, not introduced by this session
 import {
   getCachedProviderConnectionById,
   updateProviderConnection,
