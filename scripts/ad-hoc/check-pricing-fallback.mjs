@@ -35,13 +35,35 @@ function normalizeApiPricing(raw) {
 }
 
 async function tryApiPricing(providerId, apiKey, modelId) {
-  // Minimal provider base URL map — extend as needed; otherwise skip (fallback to models.dev)
+  // Check on all providers first: try known base, then registry, then stored custom baseUrl — fallback to models.dev if none
+  let base = null;
   const bases = {
     openrouter: "https://openrouter.ai/api/v1",
-    // cheaper inference providers often use OpenAI-compat /v1/models on their own host;
-    // without stored base URL we cannot probe, so fallback.
   };
-  const base = bases[providerId.toLowerCase()];
+  base = bases[providerId.toLowerCase()] || null;
+  if (!base) {
+    try {
+      const { getRegistryEntry } = await import("../../open-sse/config/providerRegistry.ts");
+      const entry = getRegistryEntry(providerId);
+      if (entry?.baseUrl) base = String(entry.baseUrl).replace(/\/+$/, "");
+      else if (Array.isArray(entry?.baseUrls) && entry.baseUrls[0])
+        base = String(entry.baseUrls[0]).replace(/\/+$/, "");
+    } catch {}
+  }
+  if (!base) {
+    try {
+      const { getDbInstance } = await import("../../src/lib/db/core.ts");
+      const db = getDbInstance();
+      const row = db
+        .prepare("SELECT provider_specific_data FROM provider_connections WHERE provider=? LIMIT 1")
+        .get(providerId);
+      if (row?.provider_specific_data) {
+        const psd = JSON.parse(row.provider_specific_data);
+        const b = psd.baseUrl || psd.base_url;
+        if (typeof b === "string" && b.startsWith("http")) base = b.replace(/\/+$/, "");
+      }
+    } catch {}
+  }
   if (!base) return null;
   try {
     const res = await fetch(`${base}/models`, {

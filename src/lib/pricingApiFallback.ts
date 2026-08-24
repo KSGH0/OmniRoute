@@ -33,7 +33,7 @@ function normalizeApiPricing(raw: unknown): { input?: number; output?: number } 
   return { input: input ?? 0, output: output ?? 0 };
 }
 
-// Minimal base URL map for providers known to expose pricing via /models
+// Base URL map for providers known to expose pricing via /models (fallback checked for all providers otherwise)
 const API_BASES: Record<string, string> = {
   openrouter: "https://openrouter.ai/api/v1",
 };
@@ -42,7 +42,18 @@ export async function fetchApiPricingForProvider(
   providerId: string,
   apiKey: string
 ): Promise<Record<string, { input: number; output: number }> | null> {
+  // Check on all providers first: try known base, then registry, then stored custom baseUrl — if none, fallback to models.dev in caller
   let base = API_BASES[providerId.toLowerCase()];
+  if (!base) {
+    try {
+      const { getRegistryEntry } = await import("@omniroute/open-sse/config/providerRegistry");
+      const entry = getRegistryEntry(providerId) as
+        { baseUrl?: string; baseUrls?: string[] } | null | undefined;
+      if (entry?.baseUrl) base = String(entry.baseUrl).replace(/\/+$/, "");
+      else if (Array.isArray(entry?.baseUrls) && entry.baseUrls[0])
+        base = String(entry.baseUrls[0]).replace(/\/+$/, "");
+    } catch {}
+  }
   // For custom OpenAI-compat providers, try stored baseUrl from connection
   if (!base) {
     try {
