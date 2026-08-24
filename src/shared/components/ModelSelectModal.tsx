@@ -176,6 +176,51 @@ export default function ModelSelectModal({
     }
   };
 
+  // Robust pricing lookup — mirrors server getPricingForModel (case-insensitive, alias, dot→hyphen)
+  const findPricingEntry = (
+    providerId: string,
+    modelId: string
+  ): { input?: number; output?: number } | null => {
+    if (!providerId || !modelId) return null;
+    const normalize = (s: string) => s.toLowerCase().trim();
+    const pLower = normalize(providerId);
+    const mLower = normalize(modelId);
+
+    // Find provider pricing case-insensitive
+    let providerPricing: Record<string, { input?: number; output?: number }> | undefined;
+    for (const [k, v] of Object.entries(pricingMap)) {
+      if (normalize(k) === pLower) {
+        providerPricing = v as Record<string, { input?: number; output?: number }>;
+        break;
+      }
+    }
+    // Try alias mapping if not found
+    if (!providerPricing) {
+      for (const [canonical, alias] of Object.entries(PROVIDER_ID_TO_ALIAS)) {
+        if (typeof alias === "string" && normalize(alias) === pLower) {
+          for (const [k, v] of Object.entries(pricingMap)) {
+            if (normalize(k) === normalize(canonical)) {
+              providerPricing = v as Record<string, { input?: number; output?: number }>;
+              break;
+            }
+          }
+          if (providerPricing) break;
+        }
+      }
+    }
+    if (!providerPricing) return null;
+
+    // Find model pricing case-insensitive, with dot→hyphen fallback
+    for (const [k, v] of Object.entries(providerPricing)) {
+      if (normalize(k) === mLower) return v as { input?: number; output?: number };
+    }
+    const hyphenModel = mLower.replace(/\./g, "-");
+    for (const [k, v] of Object.entries(providerPricing)) {
+      if (normalize(k) === hyphenModel) return v as { input?: number; output?: number };
+    }
+    return null;
+  };
+
   useEffect(() => {
     if (isOpen) {
       fetchPricing();
@@ -1130,7 +1175,7 @@ export default function ModelSelectModal({
                       )}
                       {(() => {
                         if (!showPricingBadges) return null;
-                        const pr = pricingMap[providerId]?.[model.id];
+                        const pr = findPricingEntry(providerId, model.id);
                         if (!pr || (pr.input == null && pr.output == null)) return null;
                         const isFree = (pr.input ?? 1) === 0 && (pr.output ?? 1) === 0;
                         return (
