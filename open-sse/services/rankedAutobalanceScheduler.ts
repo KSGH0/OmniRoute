@@ -122,13 +122,8 @@ export function startRankedAutobalanceScheduler(): void {
   const tick = () => {
     try {
       const db = getDbInstance();
-      const kill = db
-        .prepare(`SELECT value FROM settings WHERE key='rankedAutobalanceEnabled'`)
-        .get() as { value: string } | undefined;
-      // Default OFF: run only when the operator explicitly enabled it (settings KV
-      // stores JSON, so boolean true persists as the string "true").
-      if (!kill || kill.value !== "true") return;
-      // Find all ranked combos sourceModelIds
+      // Opt-in is per-combo (config.rankedAutobalance.autoRank) — no global gate.
+      // Combos without the flag are never touched.
       const rows = db.prepare(`SELECT config FROM combos`).all() as { config: string | null }[];
       const models = new Set<string>();
       for (const r of rows) {

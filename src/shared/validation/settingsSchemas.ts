@@ -450,9 +450,6 @@ export const updateSettingsSchema = z.object({
   autoRoutingDefaultVariant: z
     .enum(["lkgp", "coding", "fast", "cheap", "offline", "smart"])
     .optional(),
-  // Ranked autobalance (F1, railway-deploy overlay) + pricing badges (F2)
-  rankedAutobalanceEnabled: z.boolean().optional(),
-  showPricingBadges: z.boolean().optional(),
   proxyEnabled: z.boolean().optional(),
   perKeyProxyEnabled: z.boolean().optional(),
   // CLIProxyAPI connection settings

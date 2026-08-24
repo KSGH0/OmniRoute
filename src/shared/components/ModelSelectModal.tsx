@@ -151,7 +151,6 @@ export default function ModelSelectModal({
   const [pricingMap, setPricingMap] = useState<
     Record<string, Record<string, { input?: number; output?: number }>>
   >({});
-  const [showPricingBadges, setShowPricingBadges] = useState(true);
 
   const fetchPricing = async () => {
     try {
@@ -234,17 +233,6 @@ export default function ModelSelectModal({
     }
   };
 
-  const fetchPricingToggle = async () => {
-    try {
-      const res = await fetch("/api/settings");
-      if (!res.ok) return;
-      const data = await res.json();
-      setShowPricingBadges(data.showPricingBadges !== false);
-    } catch {
-      // default true
-    }
-  };
-
   // Robust pricing lookup — mirrors server getPricingForModel (case-insensitive, alias, dot→hyphen)
   const findPricingEntry = (
     providerId: string,
@@ -293,7 +281,6 @@ export default function ModelSelectModal({
   useEffect(() => {
     if (isOpen) {
       fetchPricing();
-      fetchPricingToggle();
     }
   }, [isOpen]);
 
@@ -1243,7 +1230,6 @@ export default function ModelSelectModal({
                         </span>
                       )}
                       {(() => {
-                        if (!showPricingBadges) return null;
                         const pr = findPricingEntry(providerId, model.id);
                         if (!pr || (pr.input == null && pr.output == null)) return null;
                         const isFree = (pr.input ?? 1) === 0 && (pr.output ?? 1) === 0;
