@@ -196,6 +196,37 @@ export default function ModelSelectModal({
           }
         } catch {}
       }
+      // Final fallback: /v1/models (unified catalog, always has pricing, public with API key/session)
+      if (
+        !data ||
+        typeof data !== "object" ||
+        Array.isArray(data) ||
+        Object.keys(data as object).length === 0
+      ) {
+        try {
+          const res3 = await fetch("/v1/models");
+          if (res3.ok) {
+            const j = (await res3.json()) as {
+              data?: Array<{
+                id: string;
+                pricing?: { input?: number; output?: number };
+                owned_by?: string;
+              }>;
+            };
+            const list = j.data ?? [];
+            const fb: Record<string, Record<string, { input?: number; output?: number }>> = {};
+            for (const m of list) {
+              if (!m.id || !m.pricing) continue;
+              const [prov, ...rest] = m.id.split("/");
+              const mid = rest.length ? rest.join("/") : m.id;
+              const p = prov || (m.owned_by as string) || "unknown";
+              if (!fb[p]) fb[p] = {};
+              fb[p][mid] = { input: m.pricing.input, output: m.pricing.output };
+            }
+            if (Object.keys(fb).length > 0) data = fb;
+          }
+        } catch {}
+      }
       if (data && typeof data === "object" && !Array.isArray(data))
         setPricingMap(data as Record<string, Record<string, { input?: number; output?: number }>>);
     } catch {
