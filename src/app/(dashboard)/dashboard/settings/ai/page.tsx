@@ -19,6 +19,7 @@ export default function SettingsAiPage() {
   return (
     <div className="space-y-6">
       <p className="text-sm text-text-muted">{t("aiSettingsIntro")}</p>
+      <RankedPricingAiSettingsTab />
       <ThinkingBudgetTab />
       <ModalityBridgeMovedCard />
       <SystemPromptTab />
@@ -30,7 +31,6 @@ export default function SettingsAiPage() {
       <MemorySkillsTab />
       <ModelCapabilityOverridesTab />
       <ModelsDevSyncTab />
-      <RankedPricingAiSettingsTab />
     </div>
   );
 }
