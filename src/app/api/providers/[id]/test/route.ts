@@ -1126,6 +1126,14 @@ export async function testSingleConnection(connectionId: string, validationModel
   // Update status in db
   await updateProviderConnection(connectionId, updateData);
 
+  // Pricing API-first: if this provider's /models exposes pricing, capture it on retest (non-blocking)
+  void (async () => {
+    try {
+      const { syncPricingForProvider } = await import("@/lib/pricingApiFallback");
+      await syncPricingForProvider(provider);
+    } catch {}
+  })();
+
   // Sync to cloud if token was refreshed
   if (result.refreshed) {
     await syncToCloudIfEnabled();

@@ -10,7 +10,7 @@ import { type JsonRecord, toRecord } from "./shared";
 
 type PricingModels = Record<string, JsonRecord>;
 type PricingByProvider = Record<string, PricingModels>;
-export type PricingSource = "default" | "litellm" | "modelsDev" | "user";
+export type PricingSource = "default" | "litellm" | "modelsDev" | "apiDiscovered" | "user";
 export type PricingSourceMap = Record<string, Record<string, PricingSource>>;
 
 function readPricingNamespace(
@@ -61,6 +61,7 @@ function buildPricingSourceMap(layers: {
   defaults: PricingByProvider;
   litellm: PricingByProvider;
   modelsDev: PricingByProvider;
+  apiDiscovered: PricingByProvider;
   user: PricingByProvider;
 }): PricingSourceMap {
   const sourceMap: PricingSourceMap = {};
@@ -68,6 +69,7 @@ function buildPricingSourceMap(layers: {
     layers.defaults,
     layers.litellm,
     layers.modelsDev,
+    layers.apiDiscovered,
     layers.user,
   ]);
 
@@ -77,6 +79,8 @@ function buildPricingSourceMap(layers: {
     for (const model of Object.keys(models)) {
       if (layers.user[provider]?.[model]) {
         sourceMap[provider][model] = "user";
+      } else if (layers.apiDiscovered[provider]?.[model]) {
+        sourceMap[provider][model] = "apiDiscovered";
       } else if (layers.modelsDev[provider]?.[model]) {
         sourceMap[provider][model] = "modelsDev";
       } else if (layers.litellm[provider]?.[model]) {
@@ -99,14 +103,22 @@ async function getPricingLayers() {
     defaults: getDefaultPricing(),
     litellm: readPricingNamespace(db, "pricing_synced"),
     modelsDev: readPricingNamespace(db, "models_dev_pricing"),
+    apiDiscovered: readPricingNamespace(db, "pricing_api_discovered"),
     user: readPricingNamespace(db, "pricing"),
   };
 }
 
 export async function getPricing() {
   const layers = await getPricingLayers();
-  // Merge: defaults → LiteLLM → models.dev → user (each layer overrides the previous)
-  return mergePricingLayers([layers.defaults, layers.litellm, layers.modelsDev, layers.user]);
+  // Merge: defaults → LiteLLM → models.dev → apiDiscovered → user (each layer overrides the previous)
+  // apiDiscovered = pricing returned directly by provider /models (e.g. OpenRouter), fallback to models.dev if absent
+  return mergePricingLayers([
+    layers.defaults,
+    layers.litellm,
+    layers.modelsDev,
+    layers.apiDiscovered,
+    layers.user,
+  ]);
 }
 
 export async function getPricingWithSources(): Promise<{

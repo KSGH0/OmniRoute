@@ -226,6 +226,14 @@ export async function POST(request: Request) {
       testStatus: testStatus || "unknown",
     });
 
+    // Pricing API-first: if this provider's /models exposes pricing, capture it now (non-blocking)
+    void (async () => {
+      try {
+        const { syncPricingForProvider } = await import("@/lib/pricingApiFallback");
+        await syncPricingForProvider(provider);
+      } catch {}
+    })();
+
     // Auto-trigger model discovery for the newly created connection.
     // Fire-and-forget: model sync can take seconds and should NOT block the
     // POST response. If it fails, we log and move on — the connection itself

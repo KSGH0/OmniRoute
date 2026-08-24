@@ -607,6 +607,18 @@ export async function syncModelsDev(opts?: {
         lastSyncTime = new Date().toISOString();
         lastSyncModelCount = modelCount;
         lastSyncCapabilityCount = capabilityCount;
+        // API-first pricing: if provider /models exposes pricing, store in pricing_api_discovered (overrides models.dev, under user)
+        try {
+          const { syncPricingForProvider } = await import("./pricingApiFallback");
+          const { getDbInstance } = await import("@/lib/db/core");
+          const db = getDbInstance();
+          const rows = db
+            .prepare("SELECT DISTINCT provider FROM provider_connections WHERE api_key IS NOT NULL")
+            .all() as { provider: string }[];
+          for (const r of rows) {
+            syncPricingForProvider(r.provider).catch(() => {});
+          }
+        } catch {}
       }
 
       return {
