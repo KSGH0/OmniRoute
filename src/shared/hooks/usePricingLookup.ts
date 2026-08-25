@@ -9,7 +9,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-export type PricingEntry = { input?: number; output?: number };
+export type PricingEntry = { input?: number; output?: number; cached?: number };
 export type PricingMap = Record<string, Record<string, PricingEntry>>;
 
 const norm = (s: string) => s.toLowerCase().trim();
@@ -28,7 +28,11 @@ async function extractFromCatalog(json: unknown): Promise<PricingMap | null> {
         if (!m.id || !m.pricing) continue;
         if (m.pricing.input == null && m.pricing.output == null) continue;
         if (!fb[prov]) fb[prov] = {};
-        fb[prov][m.id] = { input: m.pricing.input, output: m.pricing.output };
+        fb[prov][m.id] = {
+          input: m.pricing.input,
+          output: m.pricing.output,
+          cached: (m.pricing as { cached?: number }).cached,
+        };
         any = true;
       }
     }
@@ -50,7 +54,11 @@ async function extractFromV1Models(json: unknown): Promise<PricingMap | null> {
     const mid = rest.length ? rest.join("/") : m.id;
     const p = prov || m.owned_by || "unknown";
     if (!fb[p]) fb[p] = {};
-    fb[p][mid] = { input: m.pricing.input, output: m.pricing.output };
+    fb[p][mid] = {
+      input: m.pricing.input,
+      output: m.pricing.output,
+      cached: (m.pricing as { cached?: number }).cached,
+    };
   }
   return Object.keys(fb).length > 0 ? fb : null;
 }

@@ -361,19 +361,6 @@ export default function ModelRow({
         <code className="rounded bg-sidebar px-1.5 py-0.5 font-mono text-xs text-text-muted">
           {fullModel}
         </code>
-        {pricingEntry && (pricingEntry.input != null || pricingEntry.output != null) && (
-          <span
-            className={`shrink-0 text-[10px] font-medium ${
-              (pricingEntry.input ?? 1) === 0 && (pricingEntry.output ?? 1) === 0
-                ? "text-sky-600 dark:text-sky-400"
-                : "text-amber-600 dark:text-amber-400"
-            }`}
-          >
-            {(pricingEntry.input ?? 1) === 0 && (pricingEntry.output ?? 1) === 0
-              ? "(Free)"
-              : `($${Number(pricingEntry.input ?? 0).toFixed(2)}/$${Number(pricingEntry.output ?? 0).toFixed(2)})`}
-          </span>
-        )}
         <ModelSourceBadge source={model.source} />
         {onSetAlias && (
           <span className="flex min-w-0 items-center text-[9px] gap-1">
@@ -477,6 +464,22 @@ export default function ModelRow({
           showDeveloperToggle={showDeveloperToggle}
           disabled={compatDisabled}
         />
+        {pricingEntry && (pricingEntry.input != null || pricingEntry.output != null) && (
+          <span
+            className={`ml-1 shrink-0 whitespace-nowrap text-[10px] font-medium ${
+              (pricingEntry.input ?? 1) === 0 && (pricingEntry.output ?? 1) === 0
+                ? "text-sky-600 dark:text-sky-400"
+                : "text-amber-600 dark:text-amber-400"
+            }`}
+            title="USD per 1M tokens: input / cached / output"
+          >
+            {(pricingEntry.input ?? 1) === 0 && (pricingEntry.output ?? 1) === 0
+              ? "Free"
+              : pricingEntry.cached != null
+                ? `($${Number(pricingEntry.input ?? 0).toFixed(2)}/$${Number(pricingEntry.cached).toFixed(2)}/$${Number(pricingEntry.output ?? 0).toFixed(2)})`
+                : `($${Number(pricingEntry.input ?? 0).toFixed(2)}/$${Number(pricingEntry.output ?? 0).toFixed(2)})`}
+          </span>
+        )}
       </div>
     </div>
   );

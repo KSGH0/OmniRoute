@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import Button from "@/shared/components/Button";
 import {
   hasExactModelStepDuplicate,
@@ -54,7 +54,7 @@ export default function GlobalModelSearchPanel({
   t,
 }: Props) {
   const [pricingMap, setPricingMap] = useState<
-    Record<string, Record<string, { input?: number; output?: number }>>
+    Record<string, Record<string, { input?: number; output?: number; cached?: number }>>
   >({});
   useEffect(() => {
     let cancelled = false;
@@ -76,13 +76,24 @@ export default function GlobalModelSearchPanel({
             if (r2.ok) {
               const catalog = (await r2.json()) as Record<
                 string,
-                { models?: Array<{ id: string; pricing?: { input?: number; output?: number } }> }
+                {
+                  models?: Array<{
+                    id: string;
+                    pricing?: { input?: number; output?: number; cached?: number };
+                  }>;
+                }
               >;
-              const fb: Record<string, Record<string, { input?: number; output?: number }>> = {};
+              const fb: Record<
+                string,
+                Record<string, { input?: number; output?: number; cached?: number }>
+              > = {};
               for (const [prov, info] of Object.entries(catalog)) {
                 const ms = (
                   info as {
-                    models?: Array<{ id: string; pricing?: { input?: number; output?: number } }>;
+                    models?: Array<{
+                      id: string;
+                      pricing?: { input?: number; output?: number; cached?: number };
+                    }>;
                   }
                 )?.models;
                 if (!Array.isArray(ms)) continue;
@@ -108,12 +119,15 @@ export default function GlobalModelSearchPanel({
               const j = (await r3.json()) as {
                 data?: Array<{
                   id: string;
-                  pricing?: { input?: number; output?: number };
+                  pricing?: { input?: number; output?: number; cached?: number };
                   owned_by?: string;
                 }>;
               };
               const list = j.data ?? [];
-              const fb: Record<string, Record<string, { input?: number; output?: number }>> = {};
+              const fb: Record<
+                string,
+                Record<string, { input?: number; output?: number; cached?: number }>
+              > = {};
               for (const m of list) {
                 if (!m.id || !m.pricing) continue;
                 const [prov, ...rest] = m.id.split("/");
@@ -128,7 +142,10 @@ export default function GlobalModelSearchPanel({
         }
         if (!cancelled && data && typeof data === "object" && !Array.isArray(data)) {
           setPricingMap(
-            data as Record<string, Record<string, { input?: number; output?: number }>>
+            data as Record<
+              string,
+              Record<string, { input?: number; output?: number; cached?: number }>
+            >
           );
         }
       } catch {}
@@ -141,23 +158,23 @@ export default function GlobalModelSearchPanel({
   const findPricing = (
     providerId: string,
     modelId: string
-  ): { input?: number; output?: number } | null => {
+  ): { input?: number; output?: number; cached?: number } | null => {
     if (!providerId || !modelId) return null;
     const norm = (s: string) => s.toLowerCase().trim();
     const pLower = norm(providerId);
     const mLower = norm(modelId);
-    let prov: Record<string, { input?: number; output?: number }> | undefined;
+    let prov: Record<string, { input?: number; output?: number; cached?: number }> | undefined;
     for (const [k, v] of Object.entries(pricingMap))
       if (norm(k) === pLower) {
-        prov = v as Record<string, { input?: number; output?: number }>;
+        prov = v as Record<string, { input?: number; output?: number; cached?: number }>;
         break;
       }
     if (!prov) return null;
     for (const [k, v] of Object.entries(prov))
-      if (norm(k) === mLower) return v as { input?: number; output?: number };
+      if (norm(k) === mLower) return v as { input?: number; output?: number; cached?: number };
     const hy = mLower.replace(/\./g, "-");
     for (const [k, v] of Object.entries(prov))
-      if (norm(k) === hy) return v as { input?: number; output?: number };
+      if (norm(k) === hy) return v as { input?: number; output?: number; cached?: number };
     return null;
   };
 
@@ -174,7 +191,7 @@ export default function GlobalModelSearchPanel({
           }`}
         >
           <span className="material-symbols-outlined text-[14px]">schema</span>
-          {getI18nOrFallback(t, "builderModeStep", "Step by step (Provider → Model)")}
+          {getI18nOrFallback(t, "builderModeStep", "Step by step (Provider â†’ Model)")}
         </button>
         <button
           type="button"
@@ -283,11 +300,14 @@ export default function GlobalModelSearchPanel({
                           const isFree = (pr.input ?? 1) === 0 && (pr.output ?? 1) === 0;
                           return (
                             <span
-                              className={`shrink-0 rounded px-1 py-px text-[9px] font-medium ${isFree ? "bg-sky-500/15 text-sky-700 dark:text-sky-300" : "bg-amber-500/15 text-amber-700 dark:text-amber-300"}`}
+                              className={`shrink-0 whitespace-nowrap text-[10px] font-medium ${isFree ? "text-sky-600 dark:text-sky-400" : "text-amber-600 dark:text-amber-400"}`}
+                              title="USD per 1M tokens: input / cached / output"
                             >
                               {isFree
-                                ? "Free • $0.00"
-                                : `$${Number(pr.input ?? 0).toFixed(2)}/$${Number(pr.output ?? 0).toFixed(2)}`}
+                                ? "Free"
+                                : pr.cached != null
+                                  ? `($${Number(pr.input ?? 0).toFixed(2)}/$${Number(pr.cached).toFixed(2)}/$${Number(pr.output ?? 0).toFixed(2)})`
+                                  : `($${Number(pr.input ?? 0).toFixed(2)}/$${Number(pr.output ?? 0).toFixed(2)})`}
                             </span>
                           );
                         })()}
