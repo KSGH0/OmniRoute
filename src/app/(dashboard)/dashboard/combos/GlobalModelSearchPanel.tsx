@@ -1,9 +1,9 @@
-﻿import { useEffect, useState } from "react";
-import Button from "@/shared/components/Button";
+﻿import Button from "@/shared/components/Button";
 import {
   hasExactModelStepDuplicate,
   type ComboBuilderGlobalModelEntry,
 } from "@/lib/combos/builderDraft";
+import { usePricingLookup } from "@/shared/hooks/usePricingLookup";
 
 type TranslationFn = {
   (key: string, values?: Record<string, unknown>): string;
@@ -53,130 +53,7 @@ export default function GlobalModelSearchPanel({
   onAddAll,
   t,
 }: Props) {
-  const [pricingMap, setPricingMap] = useState<
-    Record<string, Record<string, { input?: number; output?: number; cached?: number }>>
-  >({});
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        let data: unknown = null;
-        try {
-          const r = await fetch("/api/pricing");
-          if (r.ok) data = await r.json();
-        } catch {}
-        if (
-          !data ||
-          typeof data !== "object" ||
-          Array.isArray(data) ||
-          Object.keys(data as object).length === 0
-        ) {
-          try {
-            const r2 = await fetch("/api/pricing/models");
-            if (r2.ok) {
-              const catalog = (await r2.json()) as Record<
-                string,
-                {
-                  models?: Array<{
-                    id: string;
-                    pricing?: { input?: number; output?: number; cached?: number };
-                  }>;
-                }
-              >;
-              const fb: Record<
-                string,
-                Record<string, { input?: number; output?: number; cached?: number }>
-              > = {};
-              for (const [prov, info] of Object.entries(catalog)) {
-                const ms = (
-                  info as {
-                    models?: Array<{
-                      id: string;
-                      pricing?: { input?: number; output?: number; cached?: number };
-                    }>;
-                  }
-                )?.models;
-                if (!Array.isArray(ms)) continue;
-                for (const m of ms) {
-                  if (!m.id || !m.pricing) continue;
-                  if (!fb[prov]) fb[prov] = {};
-                  fb[prov][m.id] = { input: m.pricing.input, output: m.pricing.output };
-                }
-              }
-              if (Object.keys(fb).length > 0) data = fb;
-            }
-          } catch {}
-        }
-        if (
-          !data ||
-          typeof data !== "object" ||
-          Array.isArray(data) ||
-          Object.keys(data as object).length === 0
-        ) {
-          try {
-            const r3 = await fetch("/v1/models");
-            if (r3.ok) {
-              const j = (await r3.json()) as {
-                data?: Array<{
-                  id: string;
-                  pricing?: { input?: number; output?: number; cached?: number };
-                  owned_by?: string;
-                }>;
-              };
-              const list = j.data ?? [];
-              const fb: Record<
-                string,
-                Record<string, { input?: number; output?: number; cached?: number }>
-              > = {};
-              for (const m of list) {
-                if (!m.id || !m.pricing) continue;
-                const [prov, ...rest] = m.id.split("/");
-                const mid = rest.length ? rest.join("/") : m.id;
-                const p = prov || (m.owned_by as string) || "unknown";
-                if (!fb[p]) fb[p] = {};
-                fb[p][mid] = { input: m.pricing.input, output: m.pricing.output };
-              }
-              if (Object.keys(fb).length > 0) data = fb;
-            }
-          } catch {}
-        }
-        if (!cancelled && data && typeof data === "object" && !Array.isArray(data)) {
-          setPricingMap(
-            data as Record<
-              string,
-              Record<string, { input?: number; output?: number; cached?: number }>
-            >
-          );
-        }
-      } catch {}
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const findPricing = (
-    providerId: string,
-    modelId: string
-  ): { input?: number; output?: number; cached?: number } | null => {
-    if (!providerId || !modelId) return null;
-    const norm = (s: string) => s.toLowerCase().trim();
-    const pLower = norm(providerId);
-    const mLower = norm(modelId);
-    let prov: Record<string, { input?: number; output?: number; cached?: number }> | undefined;
-    for (const [k, v] of Object.entries(pricingMap))
-      if (norm(k) === pLower) {
-        prov = v as Record<string, { input?: number; output?: number; cached?: number }>;
-        break;
-      }
-    if (!prov) return null;
-    for (const [k, v] of Object.entries(prov))
-      if (norm(k) === mLower) return v as { input?: number; output?: number; cached?: number };
-    const hy = mLower.replace(/\./g, "-");
-    for (const [k, v] of Object.entries(prov))
-      if (norm(k) === hy) return v as { input?: number; output?: number; cached?: number };
-    return null;
-  };
+  const { findPricing } = usePricingLookup();
 
   return (
     <>
@@ -296,7 +173,13 @@ export default function GlobalModelSearchPanel({
                         </span>
                         {(() => {
                           const pr = findPricing(item.providerId, item.modelId);
-                          if (!pr || (pr.input == null && pr.output == null)) return null;
+                          if (!pr || (pr.input == null && pr.output == null)) {
+                            return (
+                              <span className="shrink-0 whitespace-nowrap text-[10px] text-text-muted/70">
+                                (n/a)
+                              </span>
+                            );
+                          }
                           const isFree = (pr.input ?? 1) === 0 && (pr.output ?? 1) === 0;
                           return (
                             <span

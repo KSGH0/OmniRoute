@@ -464,7 +464,7 @@ export default function ModelRow({
           showDeveloperToggle={showDeveloperToggle}
           disabled={compatDisabled}
         />
-        {pricingEntry && (pricingEntry.input != null || pricingEntry.output != null) && (
+        {pricingEntry && (pricingEntry.input != null || pricingEntry.output != null) ? (
           <span
             className={`ml-1 shrink-0 whitespace-nowrap text-[10px] font-medium ${
               (pricingEntry.input ?? 1) === 0 && (pricingEntry.output ?? 1) === 0
@@ -478,6 +478,10 @@ export default function ModelRow({
               : pricingEntry.cached != null
                 ? `($${Number(pricingEntry.input ?? 0).toFixed(2)}/$${Number(pricingEntry.cached).toFixed(2)}/$${Number(pricingEntry.output ?? 0).toFixed(2)})`
                 : `($${Number(pricingEntry.input ?? 0).toFixed(2)}/$${Number(pricingEntry.output ?? 0).toFixed(2)})`}
+          </span>
+        ) : (
+          <span className="ml-1 shrink-0 whitespace-nowrap text-[10px] text-text-muted/70">
+            (n/a)
           </span>
         )}
       </div>

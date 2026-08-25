@@ -67,6 +67,7 @@ function loadPricingMap(): Promise<PricingMap> {
   if (!cachedPromise) {
     cachedPromise = (async () => {
       const urls = ["/api/pricing", "/api/pricing/models", "/v1/models"];
+      const map: PricingMap = {};
       for (const u of urls) {
         try {
           const res = await fetch(u);
@@ -75,7 +76,10 @@ function loadPricingMap(): Promise<PricingMap> {
           const extracted =
             u === "/v1/models" ? await extractFromV1Models(json) : await extractFromCatalog(json);
           // /api/pricing returns the merged map directly ({provider:{model:{input,output}}})
-          if (extracted) return extracted;
+          if (extracted) {
+            Object.assign(map, extracted);
+            break;
+          }
           if (
             u === "/api/pricing" &&
             json &&
@@ -83,13 +87,43 @@ function loadPricingMap(): Promise<PricingMap> {
             !Array.isArray(json) &&
             Object.keys(json as object).length > 0
           ) {
-            return json as PricingMap;
+            Object.assign(map, json as PricingMap);
+            break;
           }
         } catch {
           /* try next */
         }
       }
-      return {};
+      // Broaden coverage: OpenRouter catalog as provider-agnostic fallback
+      // ("__global__" bucket keyed by full id + last segment).
+      try {
+        const res = await fetch("/api/models/openrouter-catalog");
+        if (res.ok) {
+          const j = (await res.json()) as {
+            data?: Array<{ id?: string; pricing?: PricingEntry }>;
+          };
+          const list = j?.data;
+          if (Array.isArray(list)) {
+            const g: Record<string, PricingEntry> = (map.__global__ ??= {});
+            for (const m of list) {
+              if (!m.id || !m.pricing) continue;
+              if (m.pricing.input == null && m.pricing.output == null) continue;
+              const entry: PricingEntry = {
+                input: m.pricing.input,
+                output: m.pricing.output,
+                cached: (m.pricing as { cached?: number }).cached,
+              };
+              g[m.id.toLowerCase()] = entry;
+              const seg = m.id.includes("/") ? m.id.split("/").pop()! : m.id;
+              const segKey = seg.toLowerCase();
+              if (!g[segKey]) g[segKey] = entry;
+            }
+          }
+        }
+      } catch {
+        /* optional layer */
+      }
+      return map;
     })();
   }
   return cachedPromise;
@@ -119,6 +153,13 @@ export function findPricingInMap(
   for (const c of candidates) {
     for (const [k, v] of Object.entries(prov)) {
       if (norm(k) === c) return v as PricingEntry;
+    }
+  }
+  // Provider-agnostic fallback: OpenRouter catalog bucket (keyed by full id + last segment)
+  const global = map.__global__ as Record<string, PricingEntry> | undefined;
+  if (global) {
+    for (const c of candidates) {
+      if (global[c]) return global[c];
     }
   }
   return null;

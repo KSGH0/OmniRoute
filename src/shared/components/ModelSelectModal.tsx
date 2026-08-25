@@ -19,6 +19,7 @@ import {
   listVisibleProviderIds,
 } from "./modelSelectModalHelpers";
 import { getModelsByProviderId, PROVIDER_ID_TO_ALIAS } from "@/shared/constants/models";
+import { usePricingLookup } from "@/shared/hooks/usePricingLookup";
 import { getCompatibleFallbackModels } from "@/lib/providers/managedAvailableModels";
 import {
   getModelCatalogSourceLabel,
@@ -147,163 +148,8 @@ export default function ModelSelectModal({
   const [testingProviders, setTestingProviders] = useState(false);
   const [testProgress, setTestProgress] = useState<{ done: number; total: number } | null>(null);
   const [modelTestStatus, setModelTestStatus] = useState<Record<string, "ok" | "error">>({});
-  // F2: Pricing map for badge display (free vs paid) â€” additive, no catalog filtering
-  const [pricingMap, setPricingMap] = useState<
-    Record<string, Record<string, { input?: number; output?: number; cached?: number }>>
-  >({});
-
-  const fetchPricing = async () => {
-    try {
-      // Primary: /api/pricing (requires management auth, works when admin)
-      let data: unknown = null;
-      try {
-        const res = await fetch("/api/pricing");
-        if (res.ok) data = await res.json();
-      } catch {}
-      // Fallback: /api/pricing/models (public catalog, includes pricing for all models)
-      if (
-        !data ||
-        typeof data !== "object" ||
-        Array.isArray(data) ||
-        Object.keys(data as object).length === 0
-      ) {
-        try {
-          const res2 = await fetch("/api/pricing/models");
-          if (res2.ok) {
-            const catalog = (await res2.json()) as Record<
-              string,
-              {
-                models?: Array<{
-                  id: string;
-                  pricing?: { input?: number; output?: number; cached?: number };
-                }>;
-              }
-            >;
-            const fallback: Record<
-              string,
-              Record<string, { input?: number; output?: number; cached?: number }>
-            > = {};
-            for (const [prov, info] of Object.entries(catalog)) {
-              const models = (
-                info as {
-                  models?: Array<{
-                    id: string;
-                    pricing?: { input?: number; output?: number; cached?: number };
-                  }>;
-                }
-              )?.models;
-              if (!Array.isArray(models)) continue;
-              for (const m of models) {
-                if (!m.id || !m.pricing) continue;
-                if (!fallback[prov]) fallback[prov] = {};
-                fallback[prov][m.id] = { input: m.pricing.input, output: m.pricing.output };
-              }
-            }
-            if (Object.keys(fallback).length > 0) data = fallback;
-          }
-        } catch {}
-      }
-      // Final fallback: /v1/models (unified catalog, always has pricing, public with API key/session)
-      if (
-        !data ||
-        typeof data !== "object" ||
-        Array.isArray(data) ||
-        Object.keys(data as object).length === 0
-      ) {
-        try {
-          const res3 = await fetch("/v1/models");
-          if (res3.ok) {
-            const j = (await res3.json()) as {
-              data?: Array<{
-                id: string;
-                pricing?: { input?: number; output?: number; cached?: number };
-                owned_by?: string;
-              }>;
-            };
-            const list = j.data ?? [];
-            const fb: Record<
-              string,
-              Record<string, { input?: number; output?: number; cached?: number }>
-            > = {};
-            for (const m of list) {
-              if (!m.id || !m.pricing) continue;
-              const [prov, ...rest] = m.id.split("/");
-              const mid = rest.length ? rest.join("/") : m.id;
-              const p = prov || (m.owned_by as string) || "unknown";
-              if (!fb[p]) fb[p] = {};
-              fb[p][mid] = { input: m.pricing.input, output: m.pricing.output };
-            }
-            if (Object.keys(fb).length > 0) data = fb;
-          }
-        } catch {}
-      }
-      if (data && typeof data === "object" && !Array.isArray(data))
-        setPricingMap(
-          data as Record<
-            string,
-            Record<string, { input?: number; output?: number; cached?: number }>
-          >
-        );
-    } catch {
-      // ignore â€” badge will show fallback
-    }
-  };
-
-  // Robust pricing lookup â€” mirrors server getPricingForModel (case-insensitive, alias, dotâ†’hyphen)
-  const findPricingEntry = (
-    providerId: string,
-    modelId: string
-  ): { input?: number; output?: number; cached?: number } | null => {
-    if (!providerId || !modelId) return null;
-    const normalize = (s: string) => s.toLowerCase().trim();
-    const pLower = normalize(providerId);
-    const mLower = normalize(modelId);
-
-    // Find provider pricing case-insensitive
-    let providerPricing:
-      Record<string, { input?: number; output?: number; cached?: number }> | undefined;
-    for (const [k, v] of Object.entries(pricingMap)) {
-      if (normalize(k) === pLower) {
-        providerPricing = v as Record<string, { input?: number; output?: number; cached?: number }>;
-        break;
-      }
-    }
-    // Try alias mapping if not found
-    if (!providerPricing) {
-      for (const [canonical, alias] of Object.entries(PROVIDER_ID_TO_ALIAS)) {
-        if (typeof alias === "string" && normalize(alias) === pLower) {
-          for (const [k, v] of Object.entries(pricingMap)) {
-            if (normalize(k) === normalize(canonical)) {
-              providerPricing = v as Record<
-                string,
-                { input?: number; output?: number; cached?: number }
-              >;
-              break;
-            }
-          }
-          if (providerPricing) break;
-        }
-      }
-    }
-    if (!providerPricing) return null;
-
-    // Find model pricing case-insensitive, with dotâ†’hyphen fallback
-    for (const [k, v] of Object.entries(providerPricing)) {
-      if (normalize(k) === mLower) return v as { input?: number; output?: number; cached?: number };
-    }
-    const hyphenModel = mLower.replace(/\./g, "-");
-    for (const [k, v] of Object.entries(providerPricing)) {
-      if (normalize(k) === hyphenModel)
-        return v as { input?: number; output?: number; cached?: number };
-    }
-    return null;
-  };
-
-  useEffect(() => {
-    if (isOpen) {
-      fetchPricing();
-    }
-  }, [isOpen]);
+  // Pricing badges via shared lookup (module-cached; case/alias/dot-hyphen/vendor aware)
+  const { findPricing: findPricingEntry } = usePricingLookup();
 
   const fetchCombos = async () => {
     try {
@@ -1252,7 +1098,13 @@ export default function ModelSelectModal({
                       )}
                       {(() => {
                         const pr = findPricingEntry(providerId, model.id);
-                        if (!pr || (pr.input == null && pr.output == null)) return null;
+                        if (!pr || (pr.input == null && pr.output == null)) {
+                          return (
+                            <span className="ml-1 shrink-0 whitespace-nowrap text-[10px] text-text-muted/70">
+                              (n/a)
+                            </span>
+                          );
+                        }
                         const isFree = (pr.input ?? 1) === 0 && (pr.output ?? 1) === 0;
                         return (
                           <span
