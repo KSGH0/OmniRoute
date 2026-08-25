@@ -363,15 +363,15 @@ export default function ModelRow({
         </code>
         {pricingEntry && (pricingEntry.input != null || pricingEntry.output != null) && (
           <span
-            className={`shrink-0 rounded px-1 py-px text-[9px] font-medium ${
+            className={`shrink-0 text-[10px] font-medium ${
               (pricingEntry.input ?? 1) === 0 && (pricingEntry.output ?? 1) === 0
-                ? "bg-sky-500/15 text-sky-700 dark:text-sky-300"
-                : "bg-amber-500/15 text-amber-700 dark:text-amber-300"
+                ? "text-sky-600 dark:text-sky-400"
+                : "text-amber-600 dark:text-amber-400"
             }`}
           >
             {(pricingEntry.input ?? 1) === 0 && (pricingEntry.output ?? 1) === 0
-              ? "Free • $0.00"
-              : `$${Number(pricingEntry.input ?? 0).toFixed(2)}/$${Number(pricingEntry.output ?? 0).toFixed(2)}`}
+              ? "(Free)"
+              : `($${Number(pricingEntry.input ?? 0).toFixed(2)}/$${Number(pricingEntry.output ?? 0).toFixed(2)})`}
           </span>
         )}
         <ModelSourceBadge source={model.source} />
