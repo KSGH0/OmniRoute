@@ -83,13 +83,24 @@ export async function fetchApiPricingForProvider(
         ? (data as unknown[])
         : [];
     const out: Record<string, { input: number; output: number }> = {};
+    // OpenRouter's /models pricing is PER TOKEN — convert to per-million to match
+    // every other pricing layer (defaults / models.dev / user overrides).
+    const perToken = /openrouter\.ai/i.test(base);
+    const scale = perToken ? 1_000_000 : 1;
     for (const m of list) {
       const r = m as Record<string, unknown>;
       const id = String(r.id ?? r.slug ?? r.name ?? "").trim();
       if (!id) continue;
       const pr = normalizeApiPricing(r);
       if (!pr || (pr.input == null && pr.output == null)) continue;
-      out[id] = { input: pr.input ?? 0, output: pr.output ?? 0 };
+      const entry = {
+        input: (pr.input ?? 0) * scale,
+        output: (pr.output ?? 0) * scale,
+      };
+      out[id] = entry;
+      // Also index by last segment so lookups for "auto" find "openrouter/auto"
+      const seg = id.includes("/") ? id.split("/").pop()! : id;
+      if (!out[seg]) out[seg] = entry;
     }
     return Object.keys(out).length > 0 ? out : null;
   } catch {
