@@ -3,7 +3,6 @@ import {
   hasExactModelStepDuplicate,
   type ComboBuilderGlobalModelEntry,
 } from "@/lib/combos/builderDraft";
-import { usePricingLookup } from "@/shared/hooks/usePricingLookup";
 
 type TranslationFn = {
   (key: string, values?: Record<string, unknown>): string;
@@ -53,8 +52,6 @@ export default function GlobalModelSearchPanel({
   onAddAll,
   t,
 }: Props) {
-  const { findPricing } = usePricingLookup();
-
   return (
     <>
       <div className="flex items-center gap-1.5 mt-2.5 mb-2 p-1 bg-black/5 dark:bg-white/5 rounded-lg">
@@ -68,7 +65,7 @@ export default function GlobalModelSearchPanel({
           }`}
         >
           <span className="material-symbols-outlined text-[14px]">schema</span>
-          {getI18nOrFallback(t, "builderModeStep", "Step by step (Provider â†’ Model)")}
+          {getI18nOrFallback(t, "builderModeStep", "Step by step (Provider ΓåÆ Model)")}
         </button>
         <button
           type="button"
@@ -167,34 +164,9 @@ export default function GlobalModelSearchPanel({
                     className="flex items-center justify-between px-3 py-2 text-xs hover:bg-black/[0.02] dark:hover:bg-white/[0.03]"
                   >
                     <div className="flex flex-col min-w-0 pr-2">
-                      <div className="flex items-center gap-1 min-w-0">
-                        <span className="font-semibold text-text-main truncate">
-                          {item.modelName}
-                        </span>
-                        {(() => {
-                          const pr = findPricing(item.providerId, item.modelId);
-                          if (!pr || (pr.input == null && pr.output == null)) {
-                            return (
-                              <span className="shrink-0 whitespace-nowrap text-[10px] text-text-muted/70">
-                                (n/a)
-                              </span>
-                            );
-                          }
-                          const isFree = (pr.input ?? 1) === 0 && (pr.output ?? 1) === 0;
-                          return (
-                            <span
-                              className={`shrink-0 whitespace-nowrap text-[10px] font-medium ${isFree ? "text-sky-600 dark:text-sky-400" : "text-amber-600 dark:text-amber-400"}`}
-                              title="USD per 1M tokens: input / cached / output"
-                            >
-                              {isFree
-                                ? "Free"
-                                : pr.cached != null
-                                  ? `($${Number(pr.input ?? 0).toFixed(2)}/$${Number(pr.cached).toFixed(2)}/$${Number(pr.output ?? 0).toFixed(2)})`
-                                  : `($${Number(pr.input ?? 0).toFixed(2)}/$${Number(pr.output ?? 0).toFixed(2)})`}
-                            </span>
-                          );
-                        })()}
-                      </div>
+                      <span className="font-semibold text-text-main truncate">
+                        {item.modelName}
+                      </span>
                       <span className="text-[10px] text-text-muted truncate">
                         {getI18nOrFallback(t, "builderGlobalProviderLabel", "Provider:")}{" "}
                         <strong className="text-text-main">{item.providerName}</strong> (

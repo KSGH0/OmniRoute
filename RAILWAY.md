@@ -8,7 +8,7 @@
 
 See also `Dockerfile.railway` (225 lines) and `railway.json` at repo root.
 
-**2026-08-23 overlay — ranked autobalance + pricing badges (railway-deploy only):**
+**2026-08-23 overlay — ranked autobalance + price exposure (railway-deploy only, API/backend):**
 
-- Ranked autobalance by speed (`provider_model_speed` table + `open-sse/services/rankedAutobalanceScheduler.ts` + `POST /api/combos/:id/rank`): single toggle `Auto-rank by speed` in `Dashboard > Combos > Control Center` (`RankedAutobalanceToggle.tsx`) — per-combo opt-in, no global gate. Reranks by `p95+error*1000` every 15m + on failure (debounced 30s); splits `Free` vs `Paid` pools via two combos. **API invariant: `GET /v1/models` still lists all providers/models** — ranking only reorders `combo_targets.sort_order`, never filters catalog.
-- Pricing badges for all models (`src/shared/components/ModelSelectModal.tsx` + `GlobalModelSearchPanel.tsx`): `Free • $0.00` vs `$x.xx/$y.yy` per `provider/model`, always-on display-only (no toggle). Data: API-first (`pricing_api_discovered`, probed with decrypted key on key-add/retest/autosync) → fallback `models.dev` → hardcoded defaults; UI fetches `/api/pricing` → `/api/pricing/models` → `/v1/models`.
+- Ranked autobalance by speed (`provider_model_speed` table + `open-sse/services/rankedAutobalanceScheduler.ts` + `POST /api/combos/:id/rank`): per-combo opt-in via `PUT /api/combos/:id` with `config.rankedAutobalance: {autoRank:true, sourceModelId}` (no UI). Reranks by `p95+error*1000` every 15m + on failure (debounced 30s); latency samples recorded from real traffic via call-log persistence. **API invariant: `GET /v1/models` still lists all providers/models** — ranking only reorders `combo_targets.sort_order`, never filters catalog.
+- Price exposure to end users (`GET /v1/models` pricing field = `{input, output, cached, cache_creation}`): resolution order apiDiscovered (`pricing_api_discovered`, probed from provider `/models` with decrypted key on key-add/retest/autosync) → models.dev → LiteLLM → hardcoded defaults. Also served via `GET /api/pricing` and `GET /api/pricing/models`. No UI surface — API-only by design.

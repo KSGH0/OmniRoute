@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -6,7 +6,6 @@ import { useTranslations } from "next-intl";
 
 import Card from "@/shared/components/Card";
 import { CardSkeleton } from "@/shared/components/Loading";
-import RankedAutobalanceToggle from "./RankedAutobalanceToggle";
 import {
   extractComboRuntimeConfig,
   getComboControlCenterTargets,
@@ -75,25 +74,25 @@ async function fetchJson<T>(url: string): Promise<T> {
 }
 
 function fmtPercent(value: number | null | undefined): string {
-  if (typeof value !== "number" || !Number.isFinite(value)) return "—";
+  if (typeof value !== "number" || !Number.isFinite(value)) return "ΓÇö";
   return `${Math.round(value)}%`;
 }
 
 function fmtMs(value: number | null | undefined): string {
-  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) return "—";
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) return "ΓÇö";
   return `${Math.round(value)}ms`;
 }
 
 function fmtDate(value: string | null | undefined): string {
-  if (!value) return "—";
+  if (!value) return "ΓÇö";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
+  if (Number.isNaN(date.getTime())) return "ΓÇö";
   return date.toLocaleString();
 }
 
 function shortId(value: string | null | undefined, fallback: string, max = 10): string {
   if (!value) return fallback;
-  return value.length > max ? `${value.slice(0, max)}…` : value;
+  return value.length > max ? `${value.slice(0, max)}ΓÇª` : value;
 }
 
 function metricValue(label: string, value: string, hint?: string) {
@@ -163,7 +162,7 @@ function TargetConfiguredRow({ target }: { target: ComboControlCenterTarget }) {
           </div>
           <p className="mt-2 truncate font-mono text-sm text-text-main">{target.label}</p>
           <p className="mt-1 text-xs text-text-muted">
-            {target.provider ? getProviderDisplayName(target.provider) : t("comboReference")} ·{" "}
+            {target.provider ? getProviderDisplayName(target.provider) : t("comboReference")} ┬╖{" "}
             {t("accountShort", { id: shortId(target.connectionId, t("dynamic")) })}
           </p>
         </div>
@@ -198,8 +197,8 @@ function ResolvedTargetRow({ target }: { target: ComboControlCenterTargetHealth 
             {target.model || t("unknown")}
           </p>
           <p className="mt-1 text-xs text-text-muted">
-            {target.provider ? getProviderDisplayName(target.provider) : t("unknownProvider")} ·{" "}
-            {t("accountShort", { id: shortId(target.connectionId, t("dynamic")) })} ·{" "}
+            {target.provider ? getProviderDisplayName(target.provider) : t("unknownProvider")} ┬╖{" "}
+            {t("accountShort", { id: shortId(target.connectionId, t("dynamic")) })} ┬╖{" "}
             {t("keyShort", { id: shortId(target.executionKey, t("dynamic")) })}
           </p>
         </div>
@@ -224,11 +223,11 @@ function RecentLogRow({ log }: { log: CallLogEntry }) {
       <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <div className="min-w-0">
           <p className="truncate text-sm text-text-main">
-            <span className={ok ? "text-emerald-400" : "text-red-400"}>{log.status || "—"}</span>{" "}
+            <span className={ok ? "text-emerald-400" : "text-red-400"}>{log.status || "ΓÇö"}</span>{" "}
             {log.model || t("unknownModel")}
           </p>
           <p className="text-xs text-text-muted">
-            {fmtDate(log.timestamp)} · {log.provider || t("unknownProvider")} ·{" "}
+            {fmtDate(log.timestamp)} ┬╖ {log.provider || t("unknownProvider")} ┬╖{" "}
             {t("stepShort", {
               id: shortId(log.comboStepId || log.comboExecutionKey, t("dynamic")),
             })}
@@ -308,7 +307,7 @@ export default function ComboControlCenterClient({ comboId }: { comboId: string 
     return (
       <div className="space-y-4">
         <Link href="/dashboard/combos" className="text-sm text-primary hover:underline">
-          ← {t("backToCombos")}
+          ΓåÉ {t("backToCombos")}
         </Link>
         <Card className="border border-red-500/20 bg-red-500/10 p-6">
           <h1 className="text-lg font-semibold text-red-300">{t("unavailable")}</h1>
@@ -325,7 +324,7 @@ export default function ComboControlCenterClient({ comboId }: { comboId: string 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <Link href="/dashboard/combos" className="text-sm text-primary hover:underline">
-            ← {t("backToCombos")}
+            ΓåÉ {t("backToCombos")}
           </Link>
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <h1 className="text-2xl font-semibold text-text-main">{t("title")}</h1>
@@ -371,26 +370,6 @@ export default function ComboControlCenterClient({ comboId }: { comboId: string 
           t("providerAccountTelemetry")
         )}
       </div>
-
-      {/* F1: Ranked autobalance by speed — single toggle, no catalog filtering */}
-      <RankedAutobalanceToggle
-        comboId={combo.id}
-        comboName={combo.name}
-        config={runtimeConfig as Record<string, unknown>}
-        onUpdate={async (nextConfig) => {
-          try {
-            const res = await fetch(`/api/combos/${combo.id}`, {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ config: nextConfig }),
-            });
-            if (!res.ok) throw new Error(String(res.status));
-            await load();
-          } catch {
-            // toast handled by load error
-          }
-        }}
-      />
 
       <Card className="p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -527,7 +506,7 @@ export default function ComboControlCenterClient({ comboId }: { comboId: string 
                       {getProviderDisplayName(provider.provider)}
                     </span>
                     <span className={provider.isExhausted ? "text-red-300" : "text-text-muted"}>
-                      {fmtPercent(provider.remainingPct)} · {provider.trend}
+                      {fmtPercent(provider.remainingPct)} ┬╖ {provider.trend}
                     </span>
                   </div>
                 </div>

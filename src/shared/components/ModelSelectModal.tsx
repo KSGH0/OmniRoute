@@ -19,7 +19,6 @@ import {
   listVisibleProviderIds,
 } from "./modelSelectModalHelpers";
 import { getModelsByProviderId, PROVIDER_ID_TO_ALIAS } from "@/shared/constants/models";
-import { usePricingLookup } from "@/shared/hooks/usePricingLookup";
 import { getCompatibleFallbackModels } from "@/lib/providers/managedAvailableModels";
 import {
   getModelCatalogSourceLabel,
@@ -48,20 +47,20 @@ type ModelSelectModalProps = {
   onClose: () => void;
   onSelect: (model: unknown) => void;
   /**
-   * Optional toggle callback â€” when set, clicking a model already in
+   * Optional toggle callback ΓÇö when set, clicking a model already in
    * `addedModelValues` invokes this instead of `onSelect`, so the modal acts
    * as an in-place add/remove toggle. Ported from upstream PR
    * decolua/9router#889 (Fajar Hidayat).
    */
   onDeselect?: (model: unknown) => void;
   /**
-   * Batch add for "Select all" â€” callers that keep the modal open (combo
+   * Batch add for "Select all" ΓÇö callers that keep the modal open (combo
    * builder) must use this instead of looping `onSelect`, because each
    * single-add handler closes over the same models snapshot.
    */
   onSelectMany?: (models: unknown[]) => void;
   /**
-   * Batch remove for "Unselect all" â€” same stale-state reason as onSelectMany.
+   * Batch remove for "Unselect all" ΓÇö same stale-state reason as onSelectMany.
    */
   onDeselectMany?: (models: unknown[]) => void;
   selectedModel?: string;
@@ -71,7 +70,7 @@ type ModelSelectModalProps = {
     id?: string | number;
     // Present on real connection objects (see fetchConnections() callers);
     // consumed by hasEligibleConnectionForModel() for the "configured only"
-    // filter toggle below (#8219 dashboard-typecheck fix â€” the prop type was
+    // filter toggle below (#8219 dashboard-typecheck fix ΓÇö the prop type was
     // too narrow for the field the new filter actually reads).
     providerSpecificData?: unknown;
   }>;
@@ -82,7 +81,7 @@ type ModelSelectModalProps = {
   showCombos?: boolean;
   alwaysIncludeProviders?: string[] | null;
   /**
-   * When true, picking a model does NOT auto-close the modal â€” the caller must close
+   * When true, picking a model does NOT auto-close the modal ΓÇö the caller must close
    * explicitly. A "Done" button is rendered in the modal footer so the user has a clear
    * way to confirm they are finished adding entries. Useful in combo creation, where the
    * user typically adds several models in a row. Mutually exclusive with `multiSelect`
@@ -125,7 +124,7 @@ export default function ModelSelectModal({
   const [customModels, setCustomModels] = useState<Record<string, any>>({});
   // #9203: unified hidden-model map (customModels.isHidden +
   // modelCompatOverrides.isHidden) from `/api/provider-models`, normalized so
-  // the picker hides every model source the operator flagged â€” not just custom
+  // the picker hides every model source the operator flagged ΓÇö not just custom
   // rows that carry their own `isHidden` flag.
   const [hiddenModelsByProvider, setHiddenModelsByProvider] = useState<Map<string, Set<string>>>(
     new Map()
@@ -148,8 +147,6 @@ export default function ModelSelectModal({
   const [testingProviders, setTestingProviders] = useState(false);
   const [testProgress, setTestProgress] = useState<{ done: number; total: number } | null>(null);
   const [modelTestStatus, setModelTestStatus] = useState<Record<string, "ok" | "error">>({});
-  // Pricing badges via shared lookup (module-cached; case/alias/dot-hyphen/vendor aware)
-  const { findPricing: findPricingEntry } = usePricingLookup();
 
   const fetchCombos = async () => {
     try {
@@ -215,7 +212,7 @@ export default function ModelSelectModal({
   // upstream `/models` endpoint. Returns the model array, or null on any failure.
   const fetchProviderModels = async (providerId: string): Promise<any[] | null> => {
     try {
-      // Find the connection id for this provider â€” the route is keyed by connection.
+      // Find the connection id for this provider ΓÇö the route is keyed by connection.
       const connection = activeProviders.find((p) => p.provider === providerId);
       if (!connection?.id) return null;
 
@@ -314,7 +311,7 @@ export default function ModelSelectModal({
         isOpenAICompatibleProvider(providerId) || isAnthropicCompatibleProvider(providerId);
 
       // Get user-added custom models for this provider (if any), excluding
-      // any explicitly hidden by the operator (#7156 â€” the legacy picker
+      // any explicitly hidden by the operator (#7156 ΓÇö the legacy picker
       // must respect the same isHidden flag the Precision Builder and
       // /v1/models catalog already honor). #9203: the unified hidden map
       // additionally covers catalog-override hidden rows and is applied to
@@ -327,7 +324,7 @@ export default function ModelSelectModal({
       if (providerInfo.passthroughModels) {
         // Passthrough aliases are stored prefixed by the canonical providerId
         // (e.g. "github/gpt-4"), not the public alias (e.g. "gh/"), so we must
-        // filter/strip by providerId â€” matching the sibling custom-provider
+        // filter/strip by providerId ΓÇö matching the sibling custom-provider
         // branch below. (port: decolua/9router#485)
         const aliasModels = buildPassthroughAliasModels(
           modelAliases as Record<string, string>,
@@ -542,7 +539,7 @@ export default function ModelSelectModal({
   }, [filteredGroups, showConfiguredOnly, activeProviders]);
 
   // Flat list of currently visible provider models (respects search + configured-only).
-  // Used by Select all / Unselect all â€” does not include the Combos section.
+  // Used by Select all / Unselect all ΓÇö does not include the Combos section.
   const visibleModels = useMemo(() => {
     const models: any[] = [];
     Object.values(connectionFilteredGroups).forEach((group: any) => {
@@ -568,7 +565,7 @@ export default function ModelSelectModal({
     typeof onDeselectMany === "function" &&
     visibleModels.length > 0;
 
-  // Same combo-builder gate as Select All â€” CLI tool cards and other single-pick
+  // Same combo-builder gate as Select All ΓÇö CLI tool cards and other single-pick
   // callers should not grow provider checkboxes / a test toolbar.
   const showProviderTestControls = keepOpenOnSelect && !multiSelect;
 
@@ -626,7 +623,7 @@ export default function ModelSelectModal({
     );
     if (toAdd.length === 0) return;
     // Guard against a single click adding hundreds of models (e.g. with
-    // "Show configured only" off) â€” see modelSelectModalHelpers.ts (#8526).
+    // "Show configured only" off) ΓÇö see modelSelectModalHelpers.ts (#8526).
     if (
       shouldConfirmSelectAll(toAdd.length) &&
       !confirm(
@@ -678,7 +675,7 @@ export default function ModelSelectModal({
 
   /**
    * Smoke-test every currently-visible model under the providers the user
-   * checked â€” same /api/models/test-all + chunk-of-3 concurrency as the
+   * checked ΓÇö same /api/models/test-all + chunk-of-3 concurrency as the
    * provider detail page "Test all models" button.
    */
   const handleTestSelectedProviders = async () => {
@@ -808,7 +805,7 @@ export default function ModelSelectModal({
 
   // Footer "Done" button for single-select callers that opted out of auto-close
   // (e.g. combo creation, where users add several models in a row). Skipped when
-  // `multiSelect` is on â€” that mode renders its own Clear + Done footer below the body.
+  // `multiSelect` is on ΓÇö that mode renders its own Clear + Done footer below the body.
   const doneFooter =
     keepOpenOnSelect && !multiSelect ? (
       <button
@@ -888,7 +885,7 @@ export default function ModelSelectModal({
             <p className="text-[11px] text-text-muted leading-snug">
               {labelOrFallback(
                 "providerTestHint",
-                "Tip: check a provider â†’ Test â†’ Add working (or Remove working to undo)."
+                "Tip: check a provider ΓåÆ Test ΓåÆ Add working (or Remove working to undo)."
               )}
             </p>
 
@@ -1018,7 +1015,7 @@ export default function ModelSelectModal({
           const providerSelected = selectedProviderIds.has(providerId);
           return (
             <div key={providerId}>
-              {/* Provider header â€” opaque sticky bg so model chips never bleed through */}
+              {/* Provider header ΓÇö opaque sticky bg so model chips never bleed through */}
               <div
                 className={`flex items-center gap-1.5 mb-2 sticky top-0 z-10 py-1.5 px-1 rounded bg-surface ${
                   providerSelected ? "ring-1 ring-inset ring-primary/35" : ""
@@ -1079,7 +1076,7 @@ export default function ModelSelectModal({
                       }
                     `}
                     >
-                      {isAdded && <span className="mr-0.5 opacity-70">âœ“</span>}
+                      {isAdded && <span className="mr-0.5 opacity-70">Γ£ô</span>}
                       {model.name}
                       {model.source && (
                         <span className="ml-1 text-[10px] uppercase opacity-70">
@@ -1096,29 +1093,6 @@ export default function ModelSelectModal({
                           fail
                         </span>
                       )}
-                      {(() => {
-                        const pr = findPricingEntry(providerId, model.id);
-                        if (!pr || (pr.input == null && pr.output == null)) {
-                          return (
-                            <span className="ml-1 shrink-0 whitespace-nowrap text-[10px] text-text-muted/70">
-                              (n/a)
-                            </span>
-                          );
-                        }
-                        const isFree = (pr.input ?? 1) === 0 && (pr.output ?? 1) === 0;
-                        return (
-                          <span
-                            className={`ml-1 shrink-0 whitespace-nowrap text-[10px] font-medium ${isFree ? "text-sky-600 dark:text-sky-400" : "text-amber-600 dark:text-amber-400"}`}
-                            title="USD per 1M tokens: input / cached / output"
-                          >
-                            {isFree
-                              ? "Free"
-                              : pr.cached != null
-                                ? `($${Number(pr.input ?? 0).toFixed(2)}/$${Number(pr.cached).toFixed(2)}/$${Number(pr.output ?? 0).toFixed(2)})`
-                                : `($${Number(pr.input ?? 0).toFixed(2)}/$${Number(pr.output ?? 0).toFixed(2)})`}
-                          </span>
-                        );
-                      })()}
                     </button>
                   );
                 })}

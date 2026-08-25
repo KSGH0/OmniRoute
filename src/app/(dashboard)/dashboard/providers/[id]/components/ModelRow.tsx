@@ -1,6 +1,6 @@
-"use client";
+﻿"use client";
 /**
- * ModelRow — Issue #3501 Phase 1e
+ * ModelRow ΓÇö Issue #3501 Phase 1e
  *
  * Extracted from ProviderDetailPageClient.tsx. Contains:
  *   - ModelSourceBadge (tiny utility)
@@ -17,7 +17,6 @@ import {
 } from "@/shared/utils/modelCatalogSearch";
 import { providerText } from "../providerPageHelpers";
 import ModelCompatPopover from "./ModelCompatPopover";
-import { usePricingLookup } from "@/shared/hooks/usePricingLookup";
 
 // ---------------------------------------------------------------------------
 // Shared prop types
@@ -132,7 +131,7 @@ export function ModelVisibilityToolbar({
           type="text"
           value={filterValue}
           onChange={(e) => onFilterChange(e.target.value)}
-          placeholder={providerText(t, "filterModels", "Filter models…")}
+          placeholder={providerText(t, "filterModels", "Filter modelsΓÇª")}
           className="w-full rounded-lg border border-border bg-sidebar/50 py-1.5 pl-7 pr-3 text-xs text-text-main placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-primary"
         />
       </div>
@@ -309,8 +308,6 @@ export default function ModelRow({
   const [editing, setEditing] = useState(false);
   const [aliasValue, setAliasValue] = useState(alias || "");
   const inputRef = useRef<HTMLInputElement>(null);
-  const { findPricing } = usePricingLookup();
-  const pricingEntry = findPricing(provider, model.id);
 
   useEffect(() => {
     if (editing && inputRef.current) {
@@ -464,26 +461,6 @@ export default function ModelRow({
           showDeveloperToggle={showDeveloperToggle}
           disabled={compatDisabled}
         />
-        {pricingEntry && (pricingEntry.input != null || pricingEntry.output != null) ? (
-          <span
-            className={`ml-1 shrink-0 whitespace-nowrap text-[10px] font-medium ${
-              (pricingEntry.input ?? 1) === 0 && (pricingEntry.output ?? 1) === 0
-                ? "text-sky-600 dark:text-sky-400"
-                : "text-amber-600 dark:text-amber-400"
-            }`}
-            title="USD per 1M tokens: input / cached / output"
-          >
-            {(pricingEntry.input ?? 1) === 0 && (pricingEntry.output ?? 1) === 0
-              ? "Free"
-              : pricingEntry.cached != null
-                ? `($${Number(pricingEntry.input ?? 0).toFixed(2)}/$${Number(pricingEntry.cached).toFixed(2)}/$${Number(pricingEntry.output ?? 0).toFixed(2)})`
-                : `($${Number(pricingEntry.input ?? 0).toFixed(2)}/$${Number(pricingEntry.output ?? 0).toFixed(2)})`}
-          </span>
-        ) : (
-          <span className="ml-1 shrink-0 whitespace-nowrap text-[10px] text-text-muted/70">
-            (n/a)
-          </span>
-        )}
       </div>
     </div>
   );

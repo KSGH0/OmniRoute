@@ -1,9 +1,9 @@
----
-title: "Railway Deploy Branch — Deployment Overlay"
+﻿---
+title: "Railway Deploy Branch â€” Deployment Overlay"
 lastUpdated: 2026-08-23
 ---
 
-# Railway Deploy Branch — Deployment Overlay
+# Railway Deploy Branch â€” Deployment Overlay
 
 > **Source of truth for `railway-deploy`**. Future agents: read this before touching either branch.
 
@@ -24,7 +24,7 @@ Diff vs `release/v3.8.49` (`git diff --stat release/v3.8.49..railway-deploy` = 3
 
 - **File:** `Dockerfile.railway:1` (225 lines), `railway.json:1`
 - **Why separate file:** The standard `Dockerfile` uses BuildKit cache mounts (`--mount=type=cache`) that Railway's builder does not support. `Dockerfile.railway` is a verbatim copy without those mounts (see commit `2a10aed8f Add Railway-specific Dockerfile without cache mounts`).
-- **Builder stages:** `base` → `builder` (native `better-sqlite3` compile via `node-gyp` bypassing `npm --ignore-scripts` allowlist) → `runner-base` → `runner-web`/`runner-cli`. Sets `OMNIROUTE_MITM_STUB=1`, `OMNIROUTE_USE_TURBOPACK=1`, V8 heap `OMNIROUTE_BUILD_MEMORY_MB=4096`.
+- **Builder stages:** `base` â†’ `builder` (native `better-sqlite3` compile via `node-gyp` bypassing `npm --ignore-scripts` allowlist) â†’ `runner-base` â†’ `runner-web`/`runner-cli`. Sets `OMNIROUTE_MITM_STUB=1`, `OMNIROUTE_USE_TURBOPACK=1`, V8 heap `OMNIROUTE_BUILD_MEMORY_MB=4096`.
 - **Runner fix:** `USER root` before ENTRYPOINT so the entrypoint can fix volume ownership, then drops to `node` (UID 1000). Keeps `DATA_DIR=/app/data` matching Railway's volume mount.
 - **Railway config:** `railway.json` declares `builder: DOCKERFILE` + `dockerfilePath: ./Dockerfile.railway` (Railway schema). Without this Railway defaults to Nixpacks and breaks.
 
@@ -48,14 +48,14 @@ Diff vs `release/v3.8.49` (`git diff --stat release/v3.8.49..railway-deploy` = 3
 
 ### 5) Ignores
 
-- **Files:** `.gitignore:1` (+3 lines), `.ignore:1` (+2 lines) — ignore Railway's `.slim/` cache and `data/` volume snapshots from git.
+- **Files:** `.gitignore:1` (+3 lines), `.ignore:1` (+2 lines) â€” ignore Railway's `.slim/` cache and `data/` volume snapshots from git.
 
-### 6) Ranked Autobalance (speed) + Pricing Badges — 2026-08-23 railway-deploy only
+### 6) Ranked Autobalance (speed) + Price Exposure - 2026-08-23 railway-deploy only
 
-- **Files:** `src/lib/db/migrations/163_ranked_autobalance_speed.sql:1`, `src/lib/db/providerModelRankings.ts:1`, `src/lib/localDb.ts:850`, `open-sse/services/rankedAutobalanceScheduler.ts:1`, `src/app/api/combos/[id]/rank/route.ts:1`, `src/shared/components/ModelSelectModal.tsx:146` (pricing badge), `src/app/(dashboard)/dashboard/combos/RankedAutobalanceToggle.tsx:1`, `src/app/(dashboard)/dashboard/combos/ComboControlCenterClient.tsx:6` (toggle embed), `RAILWAY.md:9`
-- **Why:** User requested ranked provider autobalance per model (speed-only `p95+error*1000`) with single toggle + pricing visibility for all models, but **only on `railway-deploy`** (general features, but scoped to Railway overlay this cycle per operator request). Keeps `release/v3.8.49` clean for upstream merges.
-- **What:** `provider_model_speed` table stores per-`model_id`/`provider_id` `p95_ms`/`error_rate`; `POST /api/combos/:id/rank` + scheduler (`startRankedAutobalanceScheduler`, interval 15m + 30s debounce on `triggerRerankForModel`) reorders `combo_targets.sort_order` for combos with `config.rankedAutobalance.autoRank=true` (source `comboName` or `sourceModelId`), `strategy: priority|weighted`. Free vs Paid split via two combos (free $0 vs paid >0 via `pricing` table). Model pickers (`ModelSelectModal.tsx`, `GlobalModelSearchPanel.tsx`) show `Free • $0.00`(sky) vs `$in/$out`(amber) badges — always-on display-only, no toggle; data via API-first probe (`pricing_api_discovered`, decrypted key, runs on key-add/retest/autosync) → `models.dev`→ defaults, fetched through`/api/pricing`→`/api/pricing/models`→`/v1/models`. Per-combo toggle in `Combos → Control Center` (`RankedAutobalanceToggle.tsx`) is the only opt-in (no global gate).
-- **Invariant:** `GET /v1/models` + `GET /api/pricing` still list **all** providers/models — ranking only mutates combo target order via `invalidateDbCache("combos")`, catalog `hideAuto`/`hidePaidModels` paths untouched (`src/app/api/v1/models/catalog.ts:312` not modified). Toggle is additive UI/backend.
+- **Files:** `src/lib/db/migrations/163_ranked_autobalance_speed.sql:1`, `src/lib/db/providerModelRankings.ts:1`, `src/lib/localDb.ts:850`, `open-sse/services/rankedAutobalanceScheduler.ts:1`, `src/app/api/combos/[id]/rank/route.ts:1`, `src/lib/usage/callLogs.ts` (EWMA sample hook), `open-sse/services/combo.ts` (failure rerank trigger), `src/lib/pricingApiFallback.ts:1`, `src/lib/modelsDevSync.ts` + `src/app/api/providers/route.ts` + `src/app/api/providers/[id]/test/route.ts` (probe hooks), `src/lib/db/settings/pricing.ts` (apiDiscovered layer), `src/lib/modelMetadataRegistry.ts` (/v1/models exposure), `RAILWAY.md:9`
+- **Why:** Ranked provider autobalance per model (speed-only `p95+error*1000`) plus exposing already-found prices to end users via the OmniRouter API - **only on `railway-deploy`** per operator request. Keeps `release/v3.8.49` clean for upstream merges. UI surfaces intentionally excluded.
+- **What:** `provider_model_speed` stores per-`model_id`/`provider_id` EWMA `p95_ms`/`error_rate` sampled from real traffic (`recordRequestSample`, call-log persistence). `POST /api/combos/:id/rank` + scheduler (15m interval, 30s debounced failure trigger from combo target errors) reorder `combo_targets.sort_order` for combos with `config.rankedAutobalance.autoRank=true` - enabled via `PUT /api/combos/:id` (API-only; no UI). Price exposure: `/v1/models` pricing = `{input, output, cached, cache_creation}`, resolution order apiDiscovered -> models.dev -> LiteLLM -> defaults (`modelMetadataRegistry.resolveCatalogPricing`); probe writes `pricing_api_discovered` on key-add/retest/autosync using decrypted keys. Also served via `GET /api/pricing` + `GET /api/pricing/models`.
+- **Invariant:** `GET /v1/models` + `GET /api/pricing` still list **all** providers/models - ranking only mutates combo target order via `invalidateDbCache(`combos`)`, catalog filtering paths untouched (`src/app/api/v1/models/catalog.ts:312` unmodified). All changes additive backend/API.
 
 > **Already upstream, so NOT in diff anymore:** `docs/routing/REASONING_ROUTING.md` MDX frontmatter and `lobeProviderIcons.ts` Stepfun fallback (`Stepfun: { mono: StepfunMonoIcon, color: StepfunMonoIcon } // Stepfun has no Color component...` at `src/shared/components/lobeProviderIcons.ts:143-144`) were added in `589550169` and later merged upstream at `930018fd1`. The overlay no longer carries them.
 
@@ -86,11 +86,11 @@ git push origin --delete chore/bank-ratchet-v3.8.49
 
 ## Deployment Checklist (Railway)
 
-1. Railway project → Service → Settings → Build → `Dockerfile Path = Dockerfile.railway` (already set by `railway.json`)
+1. Railway project â†’ Service â†’ Settings â†’ Build â†’ `Dockerfile Path = Dockerfile.railway` (already set by `railway.json`)
 2. Variables: `DATA_DIR=/app/data`, `PORT=20128`, `OMNIROUTE_MEMORY_MB=1024` (tune if `fusionTuning.maxPanel` raised)
 3. Volume: mount `/app/data` (Railway adds it automatically; entrypoint fixes perms)
 4. Healthcheck: `HEALTHCHECK CMD ["node", "healthcheck.mjs"]` (interval 30s, start-period 15s)
-5. Deploy branch: `railway-deploy` (not `release/v3.8.49` — the latter lacks `Dockerfile.railway`)
+5. Deploy branch: `railway-deploy` (not `release/v3.8.49` â€” the latter lacks `Dockerfile.railway`)
 
 ## Historical Context
 
@@ -111,12 +111,12 @@ Keep this file updated whenever the overlay adds or removes a Railway-specific f
 
 ---
 
-## Notification — Sync Complete (2026-08-23) — Updated to main (railway-deploy now on 3.8.50 line)
+## Notification â€” Sync Complete (2026-08-23) â€” Updated to main (railway-deploy now on 3.8.50 line)
 
 > **For the user:** This spec was re-audited and **pushed only to `railway-deploy`** on **2026-08-23** (second sync).
 >
-> - **Only `railway-deploy` is modified per Railway.com** — verified: `railway-deploy` now at `9b540b865` = `origin/railway-deploy` `105842612` + 6 overlay commits (Dockerfile.railway 225 lines, railway.json DOCKERFILE, check-permissions.sh volume chown, quality shims, log hygiene, docs). `release/v3.8.49` stays at `69caabdf2` (2 ahead of `upstream/release/v3.8.49` `930018fd1` for docs only, **no Railway infra** — remains mergeable). The large `git diff release..railway` (4968 files) is the upstream 3.8.49→3.8.50 train (1465 commits), not Railway infra; Railway isolation is verified via `git diff upstream/HEAD..railway-deploy` = ~34 files.
-> - **Sync with main:** `railway-deploy` was behind main (GitHub showed 17 ahead / 1465 behind vs `upstream/release/v3.8.50`). Pulled `origin/railway-deploy` (`105842612` = 3 behind `upstream/HEAD` `62ab93d78`), rebased overlay (38f3aac6b, 5e783a215, 5578f3287, 1965ae7bb, d4c778a04, 9b540b865) — now `9b540b865` is 6 ahead / 3 behind `upstream/HEAD` (will catch remaining 3 on next pull). `release` unchanged.
+> - **Only `railway-deploy` is modified per Railway.com** â€” verified: `railway-deploy` now at `9b540b865` = `origin/railway-deploy` `105842612` + 6 overlay commits (Dockerfile.railway 225 lines, railway.json DOCKERFILE, check-permissions.sh volume chown, quality shims, log hygiene, docs). `release/v3.8.49` stays at `69caabdf2` (2 ahead of `upstream/release/v3.8.49` `930018fd1` for docs only, **no Railway infra** â€” remains mergeable). The large `git diff release..railway` (4968 files) is the upstream 3.8.49â†’3.8.50 train (1465 commits), not Railway infra; Railway isolation is verified via `git diff upstream/HEAD..railway-deploy` = ~34 files.
+> - **Sync with main:** `railway-deploy` was behind main (GitHub showed 17 ahead / 1465 behind vs `upstream/release/v3.8.50`). Pulled `origin/railway-deploy` (`105842612` = 3 behind `upstream/HEAD` `62ab93d78`), rebased overlay (38f3aac6b, 5e783a215, 5578f3287, 1965ae7bb, d4c778a04, 9b540b865) â€” now `9b540b865` is 6 ahead / 3 behind `upstream/HEAD` (will catch remaining 3 on next pull). `release` unchanged.
 > - **Pushed:** `railway-deploy` `105842612..9b540b865` to `origin` (fast-forward). `release` not modified this sync (stays 2-branch invariant). Verified `git ls-remote --heads origin` = 2 branches (`origin/release/v3.8.49`, `origin/railway-deploy`).
 > - **Build:** `fumadocs` frontmatter (`title`/`lastUpdated`) fixed on both branches (previous `MDX invalid frontmatter` resolved). `Dockerfile.railway` build now passes on Railway. Deploy from **`railway-deploy`** only.
 
