@@ -362,6 +362,14 @@ function resolveCatalogPricing(
         const input = modelPricing.input;
         const output = modelPricing.output;
         if (typeof input === "number" || typeof output === "number") {
+          // Negative prices are dynamic-pricing markers (e.g. OR "-1"/token),
+          // not real costs — treat as absent so the chain falls through.
+          if (
+            (typeof input === "number" && input < 0) ||
+            (typeof output === "number" && output < 0)
+          ) {
+            return null;
+          }
           const pricing: Record<string, number> = {};
           if (typeof input === "number") pricing.input = input;
           if (typeof output === "number") pricing.output = output;

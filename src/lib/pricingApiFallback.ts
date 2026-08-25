@@ -134,14 +134,11 @@ export async function syncPricingForProvider(providerId: string): Promise<number
   if (!apiKey) return 0;
   const apiPricing = await fetchApiPricingForProvider(providerId, apiKey);
   if (!apiPricing) return 0;
-  const insert = db.prepare(
+  // Full replace (not merge): the probe result is a complete snapshot of the
+  // provider's current /models pricing — replacing prunes stale entries and
+  // drops previously-stored garbage (e.g. pre-fix negative dynamic prices).
+  db.prepare(
     "INSERT OR REPLACE INTO key_value (namespace, key, value) VALUES ('pricing_api_discovered', ?, ?)"
-  );
-  const existing = db
-    .prepare("SELECT value FROM key_value WHERE namespace='pricing_api_discovered' AND key=?")
-    .get(providerId) as { value: string } | undefined;
-  const prev = existing ? (JSON.parse(existing.value) as Record<string, unknown>) : {};
-  const next = { ...prev, ...apiPricing };
-  insert.run(providerId, JSON.stringify(next));
+  ).run(providerId, JSON.stringify(apiPricing));
   return Object.keys(apiPricing).length;
 }
