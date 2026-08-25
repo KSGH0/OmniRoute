@@ -1,6 +1,6 @@
-﻿"use client";
+"use client";
 /**
- * ModelRow ΓÇö Issue #3501 Phase 1e
+ * ModelRow — Issue #3501 Phase 1e
  *
  * Extracted from ProviderDetailPageClient.tsx. Contains:
  *   - ModelSourceBadge (tiny utility)
@@ -131,7 +131,7 @@ export function ModelVisibilityToolbar({
           type="text"
           value={filterValue}
           onChange={(e) => onFilterChange(e.target.value)}
-          placeholder={providerText(t, "filterModels", "Filter modelsΓÇª")}
+          placeholder={providerText(t, "filterModels", "Filter models…")}
           className="w-full rounded-lg border border-border bg-sidebar/50 py-1.5 pl-7 pr-3 text-xs text-text-main placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-primary"
         />
       </div>

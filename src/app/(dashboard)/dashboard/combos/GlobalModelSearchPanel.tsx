@@ -1,4 +1,4 @@
-﻿import Button from "@/shared/components/Button";
+import Button from "@/shared/components/Button";
 import {
   hasExactModelStepDuplicate,
   type ComboBuilderGlobalModelEntry,
@@ -65,7 +65,7 @@ export default function GlobalModelSearchPanel({
           }`}
         >
           <span className="material-symbols-outlined text-[14px]">schema</span>
-          {getI18nOrFallback(t, "builderModeStep", "Step by step (Provider ΓåÆ Model)")}
+          {getI18nOrFallback(t, "builderModeStep", "Step by step (Provider → Model)")}
         </button>
         <button
           type="button"

@@ -1,9 +1,9 @@
-﻿---
-title: "Railway Deploy Branch â€” Deployment Overlay"
+---
+title: "Railway Deploy Branch — Deployment Overlay"
 lastUpdated: 2026-08-23
 ---
 
-# Railway Deploy Branch â€” Deployment Overlay
+# Railway Deploy Branch — Deployment Overlay
 
 > **Source of truth for `railway-deploy`**. Future agents: read this before touching either branch.
 
@@ -24,7 +24,7 @@ Diff vs `release/v3.8.49` (`git diff --stat release/v3.8.49..railway-deploy` = 3
 
 - **File:** `Dockerfile.railway:1` (225 lines), `railway.json:1`
 - **Why separate file:** The standard `Dockerfile` uses BuildKit cache mounts (`--mount=type=cache`) that Railway's builder does not support. `Dockerfile.railway` is a verbatim copy without those mounts (see commit `2a10aed8f Add Railway-specific Dockerfile without cache mounts`).
-- **Builder stages:** `base` â†’ `builder` (native `better-sqlite3` compile via `node-gyp` bypassing `npm --ignore-scripts` allowlist) â†’ `runner-base` â†’ `runner-web`/`runner-cli`. Sets `OMNIROUTE_MITM_STUB=1`, `OMNIROUTE_USE_TURBOPACK=1`, V8 heap `OMNIROUTE_BUILD_MEMORY_MB=4096`.
+- **Builder stages:** `base` → `builder` (native `better-sqlite3` compile via `node-gyp` bypassing `npm --ignore-scripts` allowlist) → `runner-base` → `runner-web`/`runner-cli`. Sets `OMNIROUTE_MITM_STUB=1`, `OMNIROUTE_USE_TURBOPACK=1`, V8 heap `OMNIROUTE_BUILD_MEMORY_MB=4096`.
 - **Runner fix:** `USER root` before ENTRYPOINT so the entrypoint can fix volume ownership, then drops to `node` (UID 1000). Keeps `DATA_DIR=/app/data` matching Railway's volume mount.
 - **Railway config:** `railway.json` declares `builder: DOCKERFILE` + `dockerfilePath: ./Dockerfile.railway` (Railway schema). Without this Railway defaults to Nixpacks and breaks.
 
@@ -48,7 +48,7 @@ Diff vs `release/v3.8.49` (`git diff --stat release/v3.8.49..railway-deploy` = 3
 
 ### 5) Ignores
 
-- **Files:** `.gitignore:1` (+3 lines), `.ignore:1` (+2 lines) â€” ignore Railway's `.slim/` cache and `data/` volume snapshots from git.
+- **Files:** `.gitignore:1` (+3 lines), `.ignore:1` (+2 lines) — ignore Railway's `.slim/` cache and `data/` volume snapshots from git.
 
 ### 6) Ranked Autobalance (speed) + Price Exposure - 2026-08-23 railway-deploy only
 
@@ -86,11 +86,11 @@ git push origin --delete chore/bank-ratchet-v3.8.49
 
 ## Deployment Checklist (Railway)
 
-1. Railway project â†’ Service â†’ Settings â†’ Build â†’ `Dockerfile Path = Dockerfile.railway` (already set by `railway.json`)
+1. Railway project → Service → Settings → Build → `Dockerfile Path = Dockerfile.railway` (already set by `railway.json`)
 2. Variables: `DATA_DIR=/app/data`, `PORT=20128`, `OMNIROUTE_MEMORY_MB=1024` (tune if `fusionTuning.maxPanel` raised)
 3. Volume: mount `/app/data` (Railway adds it automatically; entrypoint fixes perms)
 4. Healthcheck: `HEALTHCHECK CMD ["node", "healthcheck.mjs"]` (interval 30s, start-period 15s)
-5. Deploy branch: `railway-deploy` (not `release/v3.8.49` â€” the latter lacks `Dockerfile.railway`)
+5. Deploy branch: `railway-deploy` (not `release/v3.8.49` — the latter lacks `Dockerfile.railway`)
 
 ## Historical Context
 
@@ -111,12 +111,12 @@ Keep this file updated whenever the overlay adds or removes a Railway-specific f
 
 ---
 
-## Notification â€” Sync Complete (2026-08-23) â€” Updated to main (railway-deploy now on 3.8.50 line)
+## Notification — Sync Complete (2026-08-23) — Updated to main (railway-deploy now on 3.8.50 line)
 
 > **For the user:** This spec was re-audited and **pushed only to `railway-deploy`** on **2026-08-23** (second sync).
 >
-> - **Only `railway-deploy` is modified per Railway.com** â€” verified: `railway-deploy` now at `9b540b865` = `origin/railway-deploy` `105842612` + 6 overlay commits (Dockerfile.railway 225 lines, railway.json DOCKERFILE, check-permissions.sh volume chown, quality shims, log hygiene, docs). `release/v3.8.49` stays at `69caabdf2` (2 ahead of `upstream/release/v3.8.49` `930018fd1` for docs only, **no Railway infra** â€” remains mergeable). The large `git diff release..railway` (4968 files) is the upstream 3.8.49â†’3.8.50 train (1465 commits), not Railway infra; Railway isolation is verified via `git diff upstream/HEAD..railway-deploy` = ~34 files.
-> - **Sync with main:** `railway-deploy` was behind main (GitHub showed 17 ahead / 1465 behind vs `upstream/release/v3.8.50`). Pulled `origin/railway-deploy` (`105842612` = 3 behind `upstream/HEAD` `62ab93d78`), rebased overlay (38f3aac6b, 5e783a215, 5578f3287, 1965ae7bb, d4c778a04, 9b540b865) â€” now `9b540b865` is 6 ahead / 3 behind `upstream/HEAD` (will catch remaining 3 on next pull). `release` unchanged.
+> - **Only `railway-deploy` is modified per Railway.com** — verified: `railway-deploy` now at `9b540b865` = `origin/railway-deploy` `105842612` + 6 overlay commits (Dockerfile.railway 225 lines, railway.json DOCKERFILE, check-permissions.sh volume chown, quality shims, log hygiene, docs). `release/v3.8.49` stays at `69caabdf2` (2 ahead of `upstream/release/v3.8.49` `930018fd1` for docs only, **no Railway infra** — remains mergeable). The large `git diff release..railway` (4968 files) is the upstream 3.8.49→3.8.50 train (1465 commits), not Railway infra; Railway isolation is verified via `git diff upstream/HEAD..railway-deploy` = ~34 files.
+> - **Sync with main:** `railway-deploy` was behind main (GitHub showed 17 ahead / 1465 behind vs `upstream/release/v3.8.50`). Pulled `origin/railway-deploy` (`105842612` = 3 behind `upstream/HEAD` `62ab93d78`), rebased overlay (38f3aac6b, 5e783a215, 5578f3287, 1965ae7bb, d4c778a04, 9b540b865) — now `9b540b865` is 6 ahead / 3 behind `upstream/HEAD` (will catch remaining 3 on next pull). `release` unchanged.
 > - **Pushed:** `railway-deploy` `105842612..9b540b865` to `origin` (fast-forward). `release` not modified this sync (stays 2-branch invariant). Verified `git ls-remote --heads origin` = 2 branches (`origin/release/v3.8.49`, `origin/railway-deploy`).
 > - **Build:** `fumadocs` frontmatter (`title`/`lastUpdated`) fixed on both branches (previous `MDX invalid frontmatter` resolved). `Dockerfile.railway` build now passes on Railway. Deploy from **`railway-deploy`** only.
 

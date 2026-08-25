@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useMemo, useEffect } from "react";
 import { useTranslations } from "next-intl";
@@ -47,20 +47,20 @@ type ModelSelectModalProps = {
   onClose: () => void;
   onSelect: (model: unknown) => void;
   /**
-   * Optional toggle callback ΓÇö when set, clicking a model already in
+   * Optional toggle callback — when set, clicking a model already in
    * `addedModelValues` invokes this instead of `onSelect`, so the modal acts
    * as an in-place add/remove toggle. Ported from upstream PR
    * decolua/9router#889 (Fajar Hidayat).
    */
   onDeselect?: (model: unknown) => void;
   /**
-   * Batch add for "Select all" ΓÇö callers that keep the modal open (combo
+   * Batch add for "Select all" — callers that keep the modal open (combo
    * builder) must use this instead of looping `onSelect`, because each
    * single-add handler closes over the same models snapshot.
    */
   onSelectMany?: (models: unknown[]) => void;
   /**
-   * Batch remove for "Unselect all" ΓÇö same stale-state reason as onSelectMany.
+   * Batch remove for "Unselect all" — same stale-state reason as onSelectMany.
    */
   onDeselectMany?: (models: unknown[]) => void;
   selectedModel?: string;
@@ -70,7 +70,7 @@ type ModelSelectModalProps = {
     id?: string | number;
     // Present on real connection objects (see fetchConnections() callers);
     // consumed by hasEligibleConnectionForModel() for the "configured only"
-    // filter toggle below (#8219 dashboard-typecheck fix ΓÇö the prop type was
+    // filter toggle below (#8219 dashboard-typecheck fix — the prop type was
     // too narrow for the field the new filter actually reads).
     providerSpecificData?: unknown;
   }>;
@@ -81,7 +81,7 @@ type ModelSelectModalProps = {
   showCombos?: boolean;
   alwaysIncludeProviders?: string[] | null;
   /**
-   * When true, picking a model does NOT auto-close the modal ΓÇö the caller must close
+   * When true, picking a model does NOT auto-close the modal — the caller must close
    * explicitly. A "Done" button is rendered in the modal footer so the user has a clear
    * way to confirm they are finished adding entries. Useful in combo creation, where the
    * user typically adds several models in a row. Mutually exclusive with `multiSelect`
@@ -124,7 +124,7 @@ export default function ModelSelectModal({
   const [customModels, setCustomModels] = useState<Record<string, any>>({});
   // #9203: unified hidden-model map (customModels.isHidden +
   // modelCompatOverrides.isHidden) from `/api/provider-models`, normalized so
-  // the picker hides every model source the operator flagged ΓÇö not just custom
+  // the picker hides every model source the operator flagged — not just custom
   // rows that carry their own `isHidden` flag.
   const [hiddenModelsByProvider, setHiddenModelsByProvider] = useState<Map<string, Set<string>>>(
     new Map()
@@ -212,7 +212,7 @@ export default function ModelSelectModal({
   // upstream `/models` endpoint. Returns the model array, or null on any failure.
   const fetchProviderModels = async (providerId: string): Promise<any[] | null> => {
     try {
-      // Find the connection id for this provider ΓÇö the route is keyed by connection.
+      // Find the connection id for this provider — the route is keyed by connection.
       const connection = activeProviders.find((p) => p.provider === providerId);
       if (!connection?.id) return null;
 
@@ -311,7 +311,7 @@ export default function ModelSelectModal({
         isOpenAICompatibleProvider(providerId) || isAnthropicCompatibleProvider(providerId);
 
       // Get user-added custom models for this provider (if any), excluding
-      // any explicitly hidden by the operator (#7156 ΓÇö the legacy picker
+      // any explicitly hidden by the operator (#7156 — the legacy picker
       // must respect the same isHidden flag the Precision Builder and
       // /v1/models catalog already honor). #9203: the unified hidden map
       // additionally covers catalog-override hidden rows and is applied to
@@ -324,7 +324,7 @@ export default function ModelSelectModal({
       if (providerInfo.passthroughModels) {
         // Passthrough aliases are stored prefixed by the canonical providerId
         // (e.g. "github/gpt-4"), not the public alias (e.g. "gh/"), so we must
-        // filter/strip by providerId ΓÇö matching the sibling custom-provider
+        // filter/strip by providerId — matching the sibling custom-provider
         // branch below. (port: decolua/9router#485)
         const aliasModels = buildPassthroughAliasModels(
           modelAliases as Record<string, string>,
@@ -539,7 +539,7 @@ export default function ModelSelectModal({
   }, [filteredGroups, showConfiguredOnly, activeProviders]);
 
   // Flat list of currently visible provider models (respects search + configured-only).
-  // Used by Select all / Unselect all ΓÇö does not include the Combos section.
+  // Used by Select all / Unselect all — does not include the Combos section.
   const visibleModels = useMemo(() => {
     const models: any[] = [];
     Object.values(connectionFilteredGroups).forEach((group: any) => {
@@ -565,7 +565,7 @@ export default function ModelSelectModal({
     typeof onDeselectMany === "function" &&
     visibleModels.length > 0;
 
-  // Same combo-builder gate as Select All ΓÇö CLI tool cards and other single-pick
+  // Same combo-builder gate as Select All — CLI tool cards and other single-pick
   // callers should not grow provider checkboxes / a test toolbar.
   const showProviderTestControls = keepOpenOnSelect && !multiSelect;
 
@@ -623,7 +623,7 @@ export default function ModelSelectModal({
     );
     if (toAdd.length === 0) return;
     // Guard against a single click adding hundreds of models (e.g. with
-    // "Show configured only" off) ΓÇö see modelSelectModalHelpers.ts (#8526).
+    // "Show configured only" off) — see modelSelectModalHelpers.ts (#8526).
     if (
       shouldConfirmSelectAll(toAdd.length) &&
       !confirm(
@@ -675,7 +675,7 @@ export default function ModelSelectModal({
 
   /**
    * Smoke-test every currently-visible model under the providers the user
-   * checked ΓÇö same /api/models/test-all + chunk-of-3 concurrency as the
+   * checked — same /api/models/test-all + chunk-of-3 concurrency as the
    * provider detail page "Test all models" button.
    */
   const handleTestSelectedProviders = async () => {
@@ -805,7 +805,7 @@ export default function ModelSelectModal({
 
   // Footer "Done" button for single-select callers that opted out of auto-close
   // (e.g. combo creation, where users add several models in a row). Skipped when
-  // `multiSelect` is on ΓÇö that mode renders its own Clear + Done footer below the body.
+  // `multiSelect` is on — that mode renders its own Clear + Done footer below the body.
   const doneFooter =
     keepOpenOnSelect && !multiSelect ? (
       <button
@@ -885,7 +885,7 @@ export default function ModelSelectModal({
             <p className="text-[11px] text-text-muted leading-snug">
               {labelOrFallback(
                 "providerTestHint",
-                "Tip: check a provider ΓåÆ Test ΓåÆ Add working (or Remove working to undo)."
+                "Tip: check a provider → Test → Add working (or Remove working to undo)."
               )}
             </p>
 
@@ -1015,7 +1015,7 @@ export default function ModelSelectModal({
           const providerSelected = selectedProviderIds.has(providerId);
           return (
             <div key={providerId}>
-              {/* Provider header ΓÇö opaque sticky bg so model chips never bleed through */}
+              {/* Provider header — opaque sticky bg so model chips never bleed through */}
               <div
                 className={`flex items-center gap-1.5 mb-2 sticky top-0 z-10 py-1.5 px-1 rounded bg-surface ${
                   providerSelected ? "ring-1 ring-inset ring-primary/35" : ""
@@ -1076,7 +1076,7 @@ export default function ModelSelectModal({
                       }
                     `}
                     >
-                      {isAdded && <span className="mr-0.5 opacity-70">Γ£ô</span>}
+                      {isAdded && <span className="mr-0.5 opacity-70">✓</span>}
                       {model.name}
                       {model.source && (
                         <span className="ml-1 text-[10px] uppercase opacity-70">
