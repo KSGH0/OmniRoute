@@ -17,6 +17,7 @@ import {
 } from "@/shared/utils/modelCatalogSearch";
 import { providerText } from "../providerPageHelpers";
 import ModelCompatPopover from "./ModelCompatPopover";
+import { usePricingLookup } from "@/shared/hooks/usePricingLookup";
 
 // ---------------------------------------------------------------------------
 // Shared prop types
@@ -308,6 +309,8 @@ export default function ModelRow({
   const [editing, setEditing] = useState(false);
   const [aliasValue, setAliasValue] = useState(alias || "");
   const inputRef = useRef<HTMLInputElement>(null);
+  const { findPricing } = usePricingLookup();
+  const pricingEntry = findPricing(provider, model.id);
 
   useEffect(() => {
     if (editing && inputRef.current) {
@@ -358,6 +361,19 @@ export default function ModelRow({
         <code className="rounded bg-sidebar px-1.5 py-0.5 font-mono text-xs text-text-muted">
           {fullModel}
         </code>
+        {pricingEntry && (pricingEntry.input != null || pricingEntry.output != null) && (
+          <span
+            className={`shrink-0 rounded px-1 py-px text-[9px] font-medium ${
+              (pricingEntry.input ?? 1) === 0 && (pricingEntry.output ?? 1) === 0
+                ? "bg-sky-500/15 text-sky-700 dark:text-sky-300"
+                : "bg-amber-500/15 text-amber-700 dark:text-amber-300"
+            }`}
+          >
+            {(pricingEntry.input ?? 1) === 0 && (pricingEntry.output ?? 1) === 0
+              ? "Free • $0.00"
+              : `$${Number(pricingEntry.input ?? 0).toFixed(2)}/$${Number(pricingEntry.output ?? 0).toFixed(2)}`}
+          </span>
+        )}
         <ModelSourceBadge source={model.source} />
         {onSetAlias && (
           <span className="flex min-w-0 items-center text-[9px] gap-1">
