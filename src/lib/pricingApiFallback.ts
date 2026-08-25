@@ -93,6 +93,10 @@ export async function fetchApiPricingForProvider(
       if (!id) continue;
       const pr = normalizeApiPricing(r);
       if (!pr || (pr.input == null && pr.output == null)) continue;
+      // Dynamic-pricing marker (e.g. OpenRouter "openrouter/auto" returns -1 per
+      // token): negative values are not real prices — skip instead of storing
+      // nonsense like -1000000 after scaling.
+      if ((pr.input ?? 0) < 0 || (pr.output ?? 0) < 0) continue;
       const entry = {
         input: (pr.input ?? 0) * scale,
         output: (pr.output ?? 0) * scale,
