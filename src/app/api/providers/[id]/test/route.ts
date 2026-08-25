@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isValidationFailure, validateBody } from "@/shared/validation/helpers";
-// eslint-disable-next-line no-restricted-imports -- pre-existing localDb barrel import, not introduced by this session
 import {
   getCachedProviderConnectionById,
   updateProviderConnection,
@@ -1126,14 +1125,6 @@ export async function testSingleConnection(connectionId: string, validationModel
 
   // Update status in db
   await updateProviderConnection(connectionId, updateData);
-
-  // Pricing API-first: if this provider's /models exposes pricing, capture it on retest (non-blocking)
-  void (async () => {
-    try {
-      const { syncPricingForProvider } = await import("@/lib/pricingApiFallback");
-      await syncPricingForProvider(provider);
-    } catch {}
-  })();
 
   // Sync to cloud if token was refreshed
   if (result.refreshed) {

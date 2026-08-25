@@ -679,17 +679,6 @@ export async function registerNodejs(): Promise<void> {
           console.warn("[STARTUP] backup schedule job failed to start (non-fatal):", msg);
         }),
 
-      // Ranked autobalance scheduler (F1, railway-deploy overlay): reorders
-      // combo_targets by speed (p95 + error*1000) every 15m for combos with
-      // config.rankedAutobalance.autoRank=true. Self-gated: no-op when settings
-      // rankedAutobalanceEnabled=false. Never fatal.
-      import("@omniroute/open-sse/services/rankedAutobalanceScheduler")
-        .then((m) => m.startRankedAutobalanceScheduler())
-        .catch((err: unknown) => {
-          const msg = err instanceof Error ? err.message : String(err);
-          console.warn("[STARTUP] ranked autobalance scheduler failed to start (non-fatal):", msg);
-        }),
-
       // Real-time dashboard WebSocket daemon (port 20132): powers Combo Studio Live,
       // the Home live-pulse, and Live Compression. Side-effect import triggers the
       // flag-gated auto-start (OMNIROUTE_ENABLE_LIVE_WS, default ON).

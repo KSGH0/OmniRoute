@@ -50,14 +50,12 @@ Diff vs `release/v3.8.49` (`git diff --stat release/v3.8.49..railway-deploy` = 3
 
 - **Files:** `.gitignore:1` (+3 lines), `.ignore:1` (+2 lines) — ignore Railway's `.slim/` cache and `data/` volume snapshots from git.
 
-### 6) Ranked Autobalance (speed) + Price Exposure - 2026-08-23 railway-deploy only
+### 6) Price Exposure via API - 2026-08-23 railway-deploy only
 
-- **Files:** `src/lib/db/migrations/163_ranked_autobalance_speed.sql:1`, `src/lib/db/providerModelRankings.ts:1`, `src/lib/localDb.ts:850`, `open-sse/services/rankedAutobalanceScheduler.ts:1`, `src/app/api/combos/[id]/rank/route.ts:1`, `src/lib/usage/callLogs.ts` (EWMA sample hook), `open-sse/services/combo.ts` (failure rerank trigger), `src/lib/pricingApiFallback.ts:1`, `src/lib/modelsDevSync.ts` + `src/app/api/providers/route.ts` + `src/app/api/providers/[id]/test/route.ts` (probe hooks), `src/lib/db/settings/pricing.ts` (apiDiscovered layer), `src/lib/modelMetadataRegistry.ts` (/v1/models exposure), `RAILWAY.md:9`
-- **Why:** Ranked provider autobalance per model (speed-only `p95+error*1000`) plus exposing already-found prices to end users via the OmniRouter API - **only on `railway-deploy`** per operator request. Keeps `release/v3.8.49` clean for upstream merges. UI surfaces intentionally excluded.
-- **What:** `provider_model_speed` stores per-`model_id`/`provider_id` EWMA `p95_ms`/`error_rate` sampled from real traffic (`recordRequestSample`, call-log persistence). `POST /api/combos/:id/rank` + scheduler (15m interval, 30s debounced failure trigger from combo target errors) reorder `combo_targets.sort_order` for combos with `config.rankedAutobalance.autoRank=true` - enabled via `PUT /api/combos/:id` (API-only; no UI). Price exposure: `/v1/models` pricing = `{input, output, cached, cache_creation}`, resolution order apiDiscovered -> models.dev -> LiteLLM -> defaults (`modelMetadataRegistry.resolveCatalogPricing`); probe writes `pricing_api_discovered` on key-add/retest/autosync using decrypted keys. Also served via `GET /api/pricing` + `GET /api/pricing/models`.
-- **Invariant:** `GET /v1/models` + `GET /api/pricing` still list **all** providers/models - ranking only mutates combo target order via `invalidateDbCache(`combos`)`, catalog filtering paths untouched (`src/app/api/v1/models/catalog.ts:312` unmodified). All changes additive backend/API.
-
-> **Already upstream, so NOT in diff anymore:** `docs/routing/REASONING_ROUTING.md` MDX frontmatter and `lobeProviderIcons.ts` Stepfun fallback (`Stepfun: { mono: StepfunMonoIcon, color: StepfunMonoIcon } // Stepfun has no Color component...` at `src/shared/components/lobeProviderIcons.ts:143-144`) were added in `589550169` and later merged upstream at `930018fd1`. The overlay no longer carries them.
+- **Files:** `src/lib/db/settings/pricing.ts` (apiDiscovered read layer + `getApiDiscoveredPricing()`), `src/lib/modelMetadataRegistry.ts` (`resolveCatalogPricing` priority block + negative-price guard), `RAILWAY.md:9`
+- **Why:** Expose already-found prices to end users on the OpenAI-compatible catalog. UI surfaces intentionally excluded; earlier probe/ranking machinery was removed after editors proved not to consume per-model pricing fields.
+- **What:** `GET /v1/models` entries carry `pricing: {input, output, cached, cache_creation}`. Resolution order in `resolveCatalogPricing`: `pricing_api_discovered` (legacy namespace, no longer written) -> models.dev -> LiteLLM -> hardcoded defaults, with case-insensitive/alias/dot-hyphen/vendor-last-segment lookups and a negative-price guard (dynamic-pricing markers fall through). Also served via `GET /api/pricing` (full merged map incl. user overrides) and `GET /api/pricing/models`.
+- **Invariant:** All providers/models remain listed - pricing is additive metadata only; catalog filtering paths untouched.
 
 ## How to Keep the Branches Synced
 

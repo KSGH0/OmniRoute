@@ -563,6 +563,11 @@
       "count": 1
     }
   },
+  "src/app/api/providers/[id]/test/route.ts": {
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
   "src/app/api/providers/bulk/route.ts": {
     "no-restricted-imports": {
       "count": 1

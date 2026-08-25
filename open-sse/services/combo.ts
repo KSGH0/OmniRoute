@@ -2373,12 +2373,6 @@ async function handleComboChatInner({
             errorBody: redactConnectionLabel(errorText),
           });
 
-          // Ranked autobalance: a target failure is a signal to re-rank soon
-          // (debounced 30s inside the scheduler; no-op for non-ranked combos).
-          void import("./rankedAutobalanceScheduler")
-            .then((m) => m.triggerRerankForModel(rawModel || modelStr))
-            .catch(() => {});
-
           // #5976: per-model-quota providers (Gemini, GitHub, etc.) multiplex models
           // behind one connection. A model-level 500 or 429 (RPM) must NOT cool down
           // the entire provider — sibling models may still succeed. Skip cooldown

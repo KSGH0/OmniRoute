@@ -580,33 +580,6 @@ async function saveCallLogOperation(entry: any): Promise<void> {
       requestSummary,
     });
 
-    // Ranked autobalance telemetry (fire-and-forget): EWMA latency/error sample
-    // per provider+model so the speed-ranking scheduler has live data.
-    try {
-      const dur = logEntry.duration;
-      const st = logEntry.status;
-      if (
-        typeof dur === "number" &&
-        dur > 0 &&
-        rawProvider &&
-        logEntry.model &&
-        logEntry.model !== "-"
-      ) {
-        void import("@/lib/db/providerModelRankings")
-          .then((m) =>
-            m.recordRequestSample(
-              logEntry.model,
-              rawProvider,
-              dur,
-              typeof st === "number" && st >= 400
-            )
-          )
-          .catch(() => {});
-      }
-    } catch {
-      /* telemetry optional */
-    }
-
     scheduleCallLogRotation();
   } catch (error) {
     console.error("[callLogs] Failed to save call log:", (error as Error).message);
