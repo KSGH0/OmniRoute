@@ -1,88 +1,12 @@
 /**
  * provider_model_speed — per-model provider speed ranking for ranked autobalance (F1).
  * Speed-only: p95_ms + errorRate*1000 rank. Additive, never filters catalog.
+ *
+ * Write path: recordRequestSample() (EWMA from real requests, via call-log persistence).
+ * Read path: rankedAutobalanceScheduler.rankModelBySpeed() (direct SQL, no cache).
  */
 
-import { getDbInstance, rowToCamel } from "./core";
-import { invalidateDbCache } from "./readCache";
-
-export type ProviderModelSpeed = {
-  modelId: string;
-  providerId: string;
-  p95Ms: number | null;
-  errorRate: number;
-  sampleCount: number;
-  lastTestedAt: number | null;
-  updatedAt: number | null;
-};
-
-export function upsertProviderModelSpeed(entry: {
-  modelId: string;
-  providerId: string;
-  p95Ms: number | null;
-  errorRate?: number;
-  sampleCount?: number;
-  lastTestedAt?: number | null;
-}): void {
-  const db = getDbInstance();
-  const now = Date.now();
-  db.prepare(
-    `INSERT INTO provider_model_speed (model_id, provider_id, p95_ms, error_rate, sample_count, last_tested_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?)
-     ON CONFLICT(model_id, provider_id) DO UPDATE SET
-       p95_ms=excluded.p95_ms,
-       error_rate=excluded.error_rate,
-       sample_count=excluded.sample_count,
-       last_tested_at=excluded.last_tested_at,
-       updated_at=excluded.updated_at`
-  ).run(
-    entry.modelId,
-    entry.providerId,
-    entry.p95Ms,
-    entry.errorRate ?? 0,
-    entry.sampleCount ?? 0,
-    entry.lastTestedAt ?? null,
-    now
-  );
-  invalidateDbCache("combos");
-}
-
-export function getProviderModelSpeed(
-  modelId: string,
-  providerId: string
-): ProviderModelSpeed | null {
-  const db = getDbInstance();
-  const row = db
-    .prepare(`SELECT * FROM provider_model_speed WHERE model_id=? AND provider_id=?`)
-    .get(modelId, providerId) as Record<string, unknown> | undefined;
-  return row ? (rowToCamel(row) as ProviderModelSpeed) : null;
-}
-
-export function listSpeedsForModel(modelId: string): ProviderModelSpeed[] {
-  const db = getDbInstance();
-  const rows = db
-    .prepare(
-      `SELECT * FROM provider_model_speed WHERE model_id=? ORDER BY (COALESCE(p95_ms, 999999) + COALESCE(error_rate,0)*1000) ASC, updated_at DESC`
-    )
-    .all(modelId) as Record<string, unknown>[];
-  return rows.map((r) => rowToCamel(r) as ProviderModelSpeed);
-}
-
-export function deleteProviderModelSpeed(modelId: string, providerId?: string): void {
-  const db = getDbInstance();
-  if (providerId) {
-    db.prepare(`DELETE FROM provider_model_speed WHERE model_id=? AND provider_id=?`).run(
-      modelId,
-      providerId
-    );
-  } else {
-    db.prepare(`DELETE FROM provider_model_speed WHERE model_id=?`).run(modelId);
-  }
-  invalidateDbCache("combos");
-}
-
-// Alias for readability: rankings = speed table
-export const getRankingForModel = listSpeedsForModel;
+import { getDbInstance } from "./core";
 
 /**
  * Record one real-request latency sample (EWMA) into provider_model_speed.

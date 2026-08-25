@@ -143,12 +143,3 @@ export function startRankedAutobalanceScheduler(): void {
     (timer as unknown as { unref: () => void }).unref!();
   }
 }
-
-export function stopRankedAutobalanceSchedulerForTests(): void {
-  if (timer) {
-    clearInterval(timer);
-    timer = null;
-  }
-  for (const t of debounceMap.values()) clearTimeout(t);
-  debounceMap.clear();
-}
