@@ -24,6 +24,7 @@ import {
   type PricingByProvider,
 } from "@/lib/modelsDevSync";
 import { getSyncedPricing } from "@/lib/pricingSync";
+import { getApiDiscoveredPricing } from "@/lib/db/settings/pricing";
 import { getPricingForModel as getDefaultPricingForModel } from "@/shared/constants/pricing";
 import {
   CANONICAL_EFFORT_VALUES,
@@ -336,6 +337,45 @@ function resolveCatalogPricing(
   snapshot?: CatalogEnrichmentSnapshot
 ): Record<string, number> | null {
   if (!provider || !model) return null;
+
+  // Highest priority: API-discovered pricing (`pricing_api_discovered`) —
+  // captured live from provider /models with the operator's key. Mirrors the
+  // documented getPricing() merge order (apiDiscovered > models.dev > litellm
+  // > defaults) so end users see key-derived prices on /v1/models.
+  try {
+    const apiDiscovered = getApiDiscoveredPricing() as Record<
+      string,
+      Record<string, Record<string, number>>
+    >;
+    const providerPricing =
+      findInsensitive(apiDiscovered, provider) ||
+      findInsensitive(apiDiscovered, provider.replace(/-cn$/, ""));
+    if (providerPricing) {
+      const modelPricing =
+        findInsensitive(providerPricing, model) ||
+        findInsensitive(providerPricing, model.replace(/\./g, "-")) ||
+        findInsensitive(
+          providerPricing,
+          model.includes("/") ? model.split("/").pop() || model : model
+        );
+      if (modelPricing && typeof modelPricing === "object") {
+        const input = modelPricing.input;
+        const output = modelPricing.output;
+        if (typeof input === "number" || typeof output === "number") {
+          const pricing: Record<string, number> = {};
+          if (typeof input === "number") pricing.input = input;
+          if (typeof output === "number") pricing.output = output;
+          if (typeof modelPricing.cached === "number") pricing.cached = modelPricing.cached;
+          if (typeof modelPricing.cache_creation === "number") {
+            pricing.cache_creation = modelPricing.cache_creation;
+          }
+          return pricing;
+        }
+      }
+    }
+  } catch {
+    // pricing lookup must never break catalog assembly
+  }
 
   // Prefer models.dev synced pricing when present; fall back to hardcoded defaults.
   try {

@@ -36,6 +36,15 @@ function readPricingNamespace(
   return pricing;
 }
 
+/**
+ * Sync reader for the `pricing_api_discovered` namespace — prices captured
+ * directly from provider /models responses (key-derived). Exposed so
+ * `/v1/models` catalog enrichment can serve already-found prices to end users.
+ */
+export function getApiDiscoveredPricing(): PricingByProvider {
+  return readPricingNamespace(getDbInstance(), "pricing_api_discovered");
+}
+
 function mergePricingLayers(layers: PricingByProvider[]): PricingByProvider {
   const mergedPricing: PricingByProvider = {};
 
