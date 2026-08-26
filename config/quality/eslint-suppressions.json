@@ -1473,7 +1473,7 @@
   },
   "tests/integration/qdrant-routes.test.ts": {
     "@typescript-eslint/no-explicit-any": {
-      "count": 19
+      "count": 20
     }
   },
   "tests/integration/resilience-http-e2e.test.ts": {
