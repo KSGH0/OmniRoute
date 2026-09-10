@@ -745,9 +745,28 @@ async function backgroundRefreshTick() {
 }
 
 /**
- * Start the background refresh timer.
+ * Sleep-friendly kill-switch (e.g. Railway Serverless, which sleeps a service
+ * only after 5–10 min of zero outbound traffic): when
+ * OMNIROUTE_DISABLE_QUOTA_BACKGROUND_REFRESH is set to a truthy value
+ * (1/true/yes/on, case-insensitive), the background refresh never arms, so an
+ * idle service emits no outbound upstream quota RPCs. Request-path quota reads
+ * (`isQuotaExhaustedForRequest`) are unaffected. Default: enabled (off).
+ */
+const DISABLE_BACKGROUND_REFRESH_ENV = "OMNIROUTE_DISABLE_QUOTA_BACKGROUND_REFRESH";
+const TRUE_ENV_VALUES = new Set(["1", "true", "yes", "on"]);
+
+export function isQuotaBackgroundRefreshDisabled(): boolean {
+  const raw = process.env[DISABLE_BACKGROUND_REFRESH_ENV];
+  if (!raw) return false;
+  return TRUE_ENV_VALUES.has(raw.trim().toLowerCase());
+}
+
+/**
+ * Start the background refresh timer. No-op when the
+ * OMNIROUTE_DISABLE_QUOTA_BACKGROUND_REFRESH kill-switch is set.
  */
 export function startBackgroundRefresh() {
+  if (isQuotaBackgroundRefreshDisabled()) return;
   const state = getState();
   if (state.refreshTimer) return;
   state.refreshTimer = setInterval(backgroundRefreshTick, REFRESH_INTERVAL_MS);
