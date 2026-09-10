@@ -106,6 +106,9 @@ LABEL org.opencontainers.image.title="omniroute" \
   org.opencontainers.image.licenses="MIT"
 
 ENV NODE_ENV=production
+# Next.js framework telemetry (phones home on boot). A boot-time outbound burst
+# resets Railway Serverless's 5–10 min idle timer, so silence it in the image.
+ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=20128
 ENV HOSTNAME=0.0.0.0
 # Runtime heap ceiling. 1024MB is enough for normal traffic but can be tight
