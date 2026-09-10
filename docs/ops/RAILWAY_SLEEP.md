@@ -1,3 +1,8 @@
+---
+title: "Railway Sleep (Serverless) — Keep-Alive Audit & Recipe"
+lastUpdated: 2026-09-10
+---
+
 # Railway Sleep (Serverless) — Keep-Alive Audit & Recipe
 
 > Scope: the `railway-deploy` branch running on Railway as a single service with
